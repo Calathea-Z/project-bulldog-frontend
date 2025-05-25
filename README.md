@@ -6,3 +6,5 @@
 ![Issues](https://img.shields.io/github/issues/Calathea-Z/project-bulldog-frontend)
 
 This is the frontend for the AI personal assistant PWA...
+
+🔗 [API Docs (Backend)](https://project-bulldog-backend.azurewebsites.net/swagger)
