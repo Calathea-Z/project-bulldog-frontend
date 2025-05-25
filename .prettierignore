@@ -1,0 +1,28 @@
+# Build output
+.next/
+dist/
+build/
+
+# Dependencies
+node_modules/
+
+# Logs
+*.log
+
+# Environment files
+.env*
+*.env
+
+# OS / Editor system files
+.DS_Store
+*.swp
+
+# Version control metadata
+.git/
+
+# IDEs
+.vscode/
+.idea/
+
+#public folder
+public/
