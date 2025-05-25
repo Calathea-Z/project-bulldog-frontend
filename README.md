@@ -8,4 +8,3 @@
 This is the frontend for the AI personal assistant PWA...
 
 🔗 [API Docs (Backend)](https://project-bulldog-backend-cwdkctdgd5hnfba8.westcentralus-01.azurewebsites.net/swagger)
-
