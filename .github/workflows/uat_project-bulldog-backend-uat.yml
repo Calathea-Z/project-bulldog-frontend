@@ -24,7 +24,7 @@ jobs:
           dotnet-version: "8.0"
 
       - name: Build with dotnet
-        run: dotnet build backend/codename-bulldog.sln --configuration Release
+        run: dotnet build backend/codename-backend.sln --configuration Release
 
       - name: dotnet publish
         run: dotnet publish backend/backend.csproj -c Release -o ${{env.DOTNET_ROOT}}/myapp
@@ -55,13 +55,3 @@ jobs:
         uses: azure/login@v2
         with:
           client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_FCB3D2457DE54DEAB20A3842E5C38D5A }}
-          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_CBCA749D136E4ACAB124035557C63B62 }}
-          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_39AD3F8764834E84B9B59A6062D071E2 }}
-
-      - name: Deploy to Azure Web App - uat
-        id: deploy-to-webapp
-        uses: azure/webapps-deploy@v3
-        with:
-          app-name: "project-bulldog-backend-uat"
-          slot-name: "Production"
-          package: .
