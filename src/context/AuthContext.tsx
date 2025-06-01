@@ -67,12 +67,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       await axios.post(
         `${process.env.NEXT_PUBLIC_API_URL}/auth/logout`,
         {},
-        { withCredentials: true },
+        {
+          withCredentials: true,
+        },
       );
     } catch (err) {
-      // ignore
+      console.warn('Logout failed:', err);
     }
-
     setAccessToken(null);
     setAuth({ status: 'unauthenticated' });
     toast.success('Logged out successfully');
