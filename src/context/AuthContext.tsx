@@ -29,6 +29,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setAuth({ status: 'authenticated', token });
   };
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     // 1) If on a public page, flip to “unauthenticated”
     if (pathname === '/login' || pathname === '/signup') {
@@ -60,7 +61,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       .catch(() => {
         setAuth({ status: 'unauthenticated' });
       });
-  }, [pathname]);
+  }, []);
 
   const logout = async () => {
     try {
