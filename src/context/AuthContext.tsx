@@ -57,7 +57,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     tryRefresh();
-  }, [pathname]);
+  }, []);
 
   const logout = async () => {
     try {
