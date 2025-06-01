@@ -1,0 +1,7 @@
+export default function TasksIDPage() {
+  return (
+    <main className="p-4">
+      <h1 className="text-xl font-bold">Tasks ID Page (Coming Soon)</h1>
+    </main>
+  );
+}
