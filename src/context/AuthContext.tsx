@@ -26,6 +26,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setAuth({ status: 'authenticated', token });
   };
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     // ✅ Skip refresh on public pages
     if (pathname === '/login' || pathname === '/signup') {
@@ -57,7 +58,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     tryRefresh();
-  }, [pathname]);
+  }, []);
 
   const logout = async () => {
     try {

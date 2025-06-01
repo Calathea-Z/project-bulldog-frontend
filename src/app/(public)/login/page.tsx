@@ -4,13 +4,12 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import axios from 'axios';
 import toast from 'react-hot-toast';
-import { useAuth } from '@/context/AuthContext';
+import { setAccessToken } from '@/lib/api';
 
 export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [error, setError] = useState('');
-  const { setAuthenticated } = useAuth();
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
@@ -28,9 +27,10 @@ export default function LoginPage() {
       );
 
       const { accessToken } = res.data;
-      console.log('✅ accessToken from login:', accessToken); // ← check this
-      setAuthenticated(accessToken);
+      console.log('✅ accessToken from login:', accessToken);
 
+      setAccessToken(accessToken); // ✅ Store in-memory access token
+      sessionStorage.setItem('hasLoggedIn', 'true'); // ✅ Prevent auto refresh loop
       toast.success('Login successful!');
       router.push('/dashboard');
     } catch (err) {
