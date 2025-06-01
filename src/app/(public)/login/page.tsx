@@ -19,7 +19,12 @@ export default function LoginPage() {
       const res = await axios.post(
         `${process.env.NEXT_PUBLIC_API_URL}/auth/login`,
         { email },
-        { withCredentials: true },
+        {
+          withCredentials: true,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        },
       );
 
       const { accessToken } = res.data;
