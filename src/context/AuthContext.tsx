@@ -34,6 +34,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     console.log('📌 AuthContext mounted');
     console.log('🔍 Pathname:', pathname);
 
+    const isIOS = () =>
+      typeof navigator !== 'undefined' && /iP(ad|hone|od)/i.test(navigator.userAgent);
+
     // 1) Skip refresh if on public page
     if (pathname === '/login' || pathname === '/signup') {
       console.log('🚪 Public route detected → skipping refresh.');
@@ -57,9 +60,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     isRefreshing.current = true;
 
     console.log('🔁 Attempting /auth/refresh...');
+    const localRefreshToken = localStorage.getItem('refreshToken');
 
-    axios
-      .post(`${process.env.NEXT_PUBLIC_API_URL}/auth/refresh`, {}, { withCredentials: true })
+    const refreshRequest = isIOS()
+      ? axios.post(`${process.env.NEXT_PUBLIC_API_URL}/auth/refresh`, { token: localRefreshToken })
+      : axios.post(
+          `${process.env.NEXT_PUBLIC_API_URL}/auth/refresh`,
+          {},
+          { withCredentials: true },
+        );
+
+    refreshRequest
       .then((res) => {
         console.log('✅ Refresh success:', res.data);
         const { accessToken } = res.data;

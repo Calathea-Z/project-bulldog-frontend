@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import axios from 'axios';
 import toast from 'react-hot-toast';
-import { setAccessToken } from '@/lib/api';
+import { handlePostLogin } from '@/lib/auth';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -26,11 +26,7 @@ export default function LoginPage() {
         },
       );
 
-      const { accessToken } = res.data;
-      console.log('✅ accessToken from login:', accessToken);
-
-      setAccessToken(accessToken); // ✅ Store in-memory access token
-      sessionStorage.setItem('hasLoggedIn', 'true'); // ✅ Prevent auto refresh loop
+      handlePostLogin(res.data);
       toast.success('Login successful!');
       router.push('/dashboard');
     } catch (err) {
