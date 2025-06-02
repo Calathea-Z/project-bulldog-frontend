@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import axios from 'axios';
 import toast from 'react-hot-toast';
-import { handlePostLogin } from '@/lib/auth';
+import { handlePostLogin } from '@/services/auth';
 
 export default function LoginPage() {
   const router = useRouter();

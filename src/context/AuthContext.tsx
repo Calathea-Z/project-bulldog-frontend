@@ -1,26 +1,21 @@
 'use client';
 
-import { setAccessToken, getAccessToken } from '@/lib/api';
-import axios from 'axios';
 import { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { toast } from 'react-hot-toast';
 import { usePathname } from 'next/navigation';
-
-type AuthState =
-  | { status: 'loading' }
-  | { status: 'unauthenticated' }
-  | { status: 'authenticated'; token: string };
-
-type AuthContextValue = AuthState & {
-  logout: () => void;
-  setAuthenticated: (token: string) => void;
-};
+import { AuthState, AuthContextValue } from '@/types';
+import { useRefreshToken } from '@/hooks/useRefreshToken';
+import { setAccessToken, getAccessToken } from '@/services/api';
+import { logoutUser } from '@/services/auth';
+import { PUBLIC_ROUTES } from '@/constants/routes';
+import LoadingScreen from '@/components/ui/LoadingScreen';
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [auth, setAuth] = useState<AuthState>({ status: 'loading' });
   const pathname = usePathname();
+  const refresh = useRefreshToken();
   const isRefreshing = useRef(false);
 
   const setAuthenticated = (token: string) => {
@@ -31,85 +26,42 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
-    console.log('📌 AuthContext mounted');
-    console.log('🔍 Pathname:', pathname);
-
-    const isIOS = () =>
-      typeof navigator !== 'undefined' && /iP(ad|hone|od)/i.test(navigator.userAgent);
-
-    // 1) Skip refresh if on public page
-    if (pathname === '/login' || pathname === '/signup') {
-      console.log('🚪 Public route detected → skipping refresh.');
+    // Skip refresh if on public page
+    if (PUBLIC_ROUTES.includes(pathname)) {
       setAuth({ status: 'unauthenticated' });
       return;
     }
 
-    // 2) Already have token
+    // If already have token
     const existing = getAccessToken();
     if (existing) {
-      console.log('✅ Token already in memory:', existing);
       setAuth({ status: 'authenticated', token: existing });
       return;
     }
 
-    // 3) Prevent multiple refreshes
-    if (isRefreshing.current) {
-      console.log('⚠️ Refresh already in progress — skipping.');
-      return;
-    }
+    // Prevent multiple refreshes
+    if (isRefreshing.current) return;
     isRefreshing.current = true;
 
-    console.log('🔁 Attempting /auth/refresh...');
-    const localRefreshToken = localStorage.getItem('refreshToken');
-
-    const refreshRequest = isIOS()
-      ? axios.post(`${process.env.NEXT_PUBLIC_API_URL}/auth/refresh`, { token: localRefreshToken })
-      : axios.post(
-          `${process.env.NEXT_PUBLIC_API_URL}/auth/refresh`,
-          {},
-          { withCredentials: true },
-        );
-
-    refreshRequest
-      .then((res) => {
-        console.log('✅ Refresh success:', res.data);
-        const { accessToken, refreshToken } = res.data;
-
-        setAccessToken(accessToken);
-        setAuth({ status: 'authenticated', token: accessToken });
-
-        if (isIOS() && refreshToken) {
-          localStorage.setItem('refreshToken', refreshToken);
-          console.log('📱 iOS detected — refresh token stored in localStorage');
-        }
-      })
-      .catch((err) => {
-        console.warn('❌ Refresh failed:', err?.response?.data || err.message);
+    // Call refresh from hook
+    refresh().then((token) => {
+      if (token) {
+        setAuth({ status: 'authenticated', token });
+      } else {
         setAuth({ status: 'unauthenticated' });
-      });
+      }
+    });
   }, []);
 
   const logout = async () => {
-    try {
-      await axios.post(
-        `${process.env.NEXT_PUBLIC_API_URL}/auth/logout`,
-        {},
-        {
-          withCredentials: true,
-        },
-      );
-    } catch (err) {
-      console.warn('Logout failed:', err);
-    }
-    setAccessToken(null);
+    await logoutUser();
     setAuth({ status: 'unauthenticated' });
     toast.success('Logged out successfully');
-    window.location.href = '/login';
   };
 
   // Only render children once we’re not in “loading” state
   if (auth.status === 'loading') {
-    return <div className="flex items-center justify-center h-screen">Loading…</div>;
+    return <LoadingScreen />;
   }
 
   return (
