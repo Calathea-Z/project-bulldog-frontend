@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { setAccessToken } from '@/services/api';
+import { getAccessToken, setAccessToken, api } from '@/services/api';
 import { isIOS } from '@/utils/device';
 
 /**
@@ -56,16 +56,29 @@ export function handlePostLogin(data: { accessToken: string; refreshToken?: stri
  * clear local state and redirect to login
  */
 export async function logoutUser(): Promise<void> {
+  const accessToken = getAccessToken();
+
   try {
+    // Clear any stored refresh token for iOS devices
+    if (isIOS()) {
+      localStorage.removeItem('refreshToken');
+    }
+
     await axios.post(
       `${process.env.NEXT_PUBLIC_API_URL}/auth/logout`,
       {},
-      { withCredentials: true },
+      {
+        withCredentials: true,
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+      },
     );
   } catch (err) {
     console.warn('Logout failed:', err);
+  } finally {
+    setAccessToken(null);
+    sessionStorage.removeItem('hasLoggedIn');
   }
-
-  setAccessToken(null);
-  window.location.href = '/login';
 }

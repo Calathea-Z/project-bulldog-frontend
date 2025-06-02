@@ -21,21 +21,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const setAuthenticated = (token: string) => {
     // store the new access token in memory
     setAccessToken(token);
-    setAuth({ status: 'authenticated', token });
+    setAuth({ status: 'authenticated', accessToken: token });
   };
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     // Skip refresh if on public page
     if (PUBLIC_ROUTES.includes(pathname)) {
-      setAuth({ status: 'unauthenticated' });
+      setAuth({ status: 'unauthenticated', accessToken: null });
       return;
     }
 
     // If already have token
     const existing = getAccessToken();
     if (existing) {
-      setAuth({ status: 'authenticated', token: existing });
+      setAuth({ status: 'authenticated', accessToken: existing });
       return;
     }
 
@@ -46,16 +46,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Call refresh from hook
     refresh().then((token) => {
       if (token) {
-        setAuth({ status: 'authenticated', token });
+        setAuth({ status: 'authenticated', accessToken: token });
       } else {
-        setAuth({ status: 'unauthenticated' });
+        setAuth({ status: 'unauthenticated', accessToken: null });
       }
     });
   }, []);
 
   const logout = async () => {
     await logoutUser();
-    setAuth({ status: 'unauthenticated' });
+    setAuth({ status: 'unauthenticated', accessToken: null });
+
     toast.success('Logged out successfully');
   };
 

@@ -1,7 +1,7 @@
 export type AuthState =
   | { status: 'loading' }
-  | { status: 'unauthenticated' }
-  | { status: 'authenticated'; token: string };
+  | { status: 'unauthenticated'; accessToken: null }
+  | { status: 'authenticated'; accessToken: string };
 
 export type AuthContextValue = AuthState & {
   logout: () => void;
