@@ -73,9 +73,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     refreshRequest
       .then((res) => {
         console.log('✅ Refresh success:', res.data);
-        const { accessToken } = res.data;
+        const { accessToken, refreshToken } = res.data;
+
         setAccessToken(accessToken);
         setAuth({ status: 'authenticated', token: accessToken });
+
+        if (isIOS() && refreshToken) {
+          localStorage.setItem('refreshToken', refreshToken);
+          console.log('📱 iOS detected — refresh token stored in localStorage');
+        }
       })
       .catch((err) => {
         console.warn('❌ Refresh failed:', err?.response?.data || err.message);
