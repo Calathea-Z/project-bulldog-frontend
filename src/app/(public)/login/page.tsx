@@ -5,14 +5,18 @@ import { useRouter } from 'next/navigation';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import { handlePostLogin } from '@/services/auth';
+import LoadingScreen from '@/components/ui/LoadingScreen';
 
 export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
+    setIsLoading(true);
+    setError('');
 
     try {
       const res = await axios.post(
@@ -33,11 +37,14 @@ export default function LoginPage() {
       console.error(err);
       toast.error('Login failed. Please try again.');
       setError('Invalid email or unexpected error.');
+    } finally {
+      setIsLoading(false);
     }
   }
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-gray-100 p-4">
+      {isLoading && <LoadingScreen />}
       <form
         onSubmit={handleLogin}
         className="w-full max-w-sm bg-white p-6 rounded shadow space-y-4"
@@ -51,13 +58,15 @@ export default function LoginPage() {
           className="w-full p-2 border rounded"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
+          disabled={isLoading}
         />
 
         <button
           type="submit"
-          className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded"
+          className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded disabled:opacity-50 disabled:cursor-not-allowed"
+          disabled={isLoading}
         >
-          Sign In
+          {isLoading ? 'Signing in...' : 'Sign In'}
         </button>
 
         {error && <p className="text-sm text-red-500">{error}</p>}
