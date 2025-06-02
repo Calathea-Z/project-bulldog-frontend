@@ -31,34 +31,43 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
-    // 1) If on a public page, flip to “unauthenticated”
+    console.log('📌 AuthContext mounted');
+    console.log('🔍 Pathname:', pathname);
+
+    // 1) Skip refresh if on public page
     if (pathname === '/login' || pathname === '/signup') {
+      console.log('🚪 Public route detected → skipping refresh.');
       setAuth({ status: 'unauthenticated' });
       return;
     }
 
-    // 2) If we already have a valid in-memory token, just mark “authenticated”
+    // 2) Already have token
     const existing = getAccessToken();
     if (existing) {
+      console.log('✅ Token already in memory:', existing);
       setAuth({ status: 'authenticated', token: existing });
       return;
     }
 
-    // 3) Otherwise, we have to call /auth/refresh exactly once
+    // 3) Prevent multiple refreshes
     if (isRefreshing.current) {
-      // safety check (shouldn’t really happen with [] deps, but React Strict Mode can fire useEffect twice in dev)
+      console.log('⚠️ Refresh already in progress — skipping.');
       return;
     }
     isRefreshing.current = true;
 
+    console.log('🔁 Attempting /auth/refresh...');
+
     axios
       .post(`${process.env.NEXT_PUBLIC_API_URL}/auth/refresh`, {}, { withCredentials: true })
       .then((res) => {
+        console.log('✅ Refresh success:', res.data);
         const { accessToken } = res.data;
         setAccessToken(accessToken);
         setAuth({ status: 'authenticated', token: accessToken });
       })
-      .catch(() => {
+      .catch((err) => {
+        console.warn('❌ Refresh failed:', err?.response?.data || err.message);
         setAuth({ status: 'unauthenticated' });
       });
   }, []);
