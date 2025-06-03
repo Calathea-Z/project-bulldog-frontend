@@ -24,7 +24,6 @@ import { isIOS } from '@/utils/device';
 export function handlePostLogin(data: { accessToken: string; refreshToken?: string }) {
   const { accessToken, refreshToken } = data;
 
-  console.log('✅ accessToken from login:', accessToken);
   setAccessToken(accessToken);
   sessionStorage.setItem('hasLoggedIn', 'true');
 
