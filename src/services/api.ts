@@ -132,8 +132,9 @@ api.interceptors.response.use(
         originalRequest.headers['Authorization'] = `Bearer ${newToken}`;
 
         return api(originalRequest);
-      } catch (refreshError) {
-        processQueue(refreshError, null);
+      } catch (refreshError: unknown) {
+        const axiosError = refreshError as AxiosError;
+        processQueue(axiosError, null);
         window.location.href = '/login';
         return Promise.reject(refreshError);
       } finally {
