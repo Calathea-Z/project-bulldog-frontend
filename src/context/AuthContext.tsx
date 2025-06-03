@@ -16,7 +16,7 @@ import { isIOS } from '@/utils/device';
  * Provides authentication status, tokens, and auth-related functions
  */
 const AuthContext = createContext<AuthContextValue | null>(null);
-const refresh = useRefreshToken();
+
 /**
  * Authentication provider component that manages authentication state and provides auth context
  * Handles token management, authentication status, and iOS-specific token storage
@@ -24,6 +24,7 @@ const refresh = useRefreshToken();
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [auth, setAuth] = useState<AuthState>({ status: 'loading' });
   const pathname = usePathname();
+  const refresh = useRefreshToken();
 
   /**
    * Sets the authenticated state with the provided tokens
