@@ -1,4 +1,4 @@
-import axios, { AxiosInstance } from 'axios';
+import axios, { AxiosInstance, AxiosError } from 'axios';
 import { RetryableRequest } from '@/types';
 
 let accessToken: string | null = null;
@@ -15,7 +15,7 @@ let failedQueue: {
  * @param error - Any error that occurred during refresh
  * @param token - The new access token if refresh was successful
  */
-const processQueue = (error: any, token: string | null) => {
+const processQueue = (error: AxiosError | null, token: string | null) => {
   failedQueue.forEach((p) => (error ? p.reject(error) : p.resolve(token)));
   failedQueue = [];
 };
