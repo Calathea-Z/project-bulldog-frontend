@@ -43,6 +43,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
    * Effect hook to handle initial authentication state
    * Checks for existing tokens and handles iOS-specific token restoration
    */
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (PUBLIC_ROUTES.includes(pathname)) {
       setAuth({ status: 'unauthenticated', accessToken: null });
