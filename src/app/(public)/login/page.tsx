@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import axios from 'axios';
 import toast from 'react-hot-toast';
-import { handlePostLogin } from '@/services/auth';
+import { handlePostLogin } from '@/services/authService';
 import LoadingScreen from '@/components/ui/LoadingScreen';
 import ThemeToggle from '@/components/ui/ThemeToggle';
 import Image from 'next/image';

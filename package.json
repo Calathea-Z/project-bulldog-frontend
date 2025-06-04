@@ -11,6 +11,7 @@
     "format:check": "prettier --check ."
   },
   "dependencies": {
+    "@tanstack/react-query": "^4.39.1",
     "axios": "^1.9.0",
     "lucide-react": "^0.511.0",
     "next": "15.3.2",
@@ -23,6 +24,7 @@
   "devDependencies": {
     "@eslint/eslintrc": "^3",
     "@tailwindcss/cli": "^4.1.8",
+    "@tanstack/eslint-plugin-query": "^4.39.1",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
