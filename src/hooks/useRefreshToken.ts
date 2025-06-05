@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { setAccessToken } from '@/services/api';
+import { setAccessToken } from '@/services/apiService';
 import { isIOS } from '@/utils/device';
 
 /**
