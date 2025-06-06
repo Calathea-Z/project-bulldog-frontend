@@ -4,6 +4,9 @@ module.exports = {
   content: ['./src/**/*.{ts,tsx,js,jsx}'],
   theme: {
     extend: {
+      fontFamily: {
+        sans: ['var(--font-dm-sans)'],
+      },
       colors: {
         background: 'var(--color-background)',
         surface: 'var(--color-surface)',

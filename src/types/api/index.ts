@@ -5,3 +5,11 @@ export interface ActionItem {
   isDone: boolean;
   dueAt: string | null;
 }
+
+export interface Summary {
+  id: string;
+  originalText: string;
+  summaryText: string;
+  createdAt: string;
+  actionItems: ActionItem[];
+}

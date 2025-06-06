@@ -8,7 +8,7 @@ import { useRefreshToken } from '@/hooks/useRefreshToken';
 import { setAccessToken, getAccessToken } from '@/services/apiService';
 import { logoutUser } from '@/services/authService';
 import { PUBLIC_ROUTES } from '@/constants/routes';
-import LoadingScreen from '@/components/ui/LoadingScreen';
+import LoadingScreen from '@/components/ui/loaders/LoadingScreen';
 import { isIOS } from '@/utils/device';
 
 /**
