@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { getAccessToken } from '@/services/apiService';
+import { getAccessToken } from '@/services';
 
 export function useRedirectIfAuthenticated() {
   const router = useRouter();

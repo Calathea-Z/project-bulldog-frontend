@@ -3,16 +3,16 @@
 import { useTheme } from 'next-themes';
 import { Sun, Moon } from 'lucide-react';
 
-export default function ThemeToggle() {
-  const { resolvedTheme, setTheme } = useTheme();
-  const isDark = resolvedTheme === 'dark';
+export function ThemeToggle() {
+  const { theme, setTheme } = useTheme();
 
   return (
     <button
-      onClick={() => setTheme(isDark ? 'light' : 'dark')}
-      className="p-2 bg-surface text-primary rounded"
+      onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+      className="p-2 rounded-lg bg-surface hover:bg-accent transition-colors"
+      aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} theme`}
     >
-      {isDark ? <Sun size={20} /> : <Moon size={20} />}
+      {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
     </button>
   );
 }

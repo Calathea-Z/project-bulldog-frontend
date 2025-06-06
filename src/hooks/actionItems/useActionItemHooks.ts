@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { actionItemService } from '@/services/actionItemService';
+import { actionItemService } from '@/services';
 import { ActionItem } from '@/types/api';
 
 /**

@@ -4,11 +4,10 @@ import { createContext, useContext, useState, useEffect } from 'react';
 import { toast } from 'react-hot-toast';
 import { usePathname } from 'next/navigation';
 import { AuthState, AuthContextValue } from '@/types';
-import { useRefreshToken } from '@/hooks/useRefreshToken';
-import { setAccessToken, getAccessToken } from '@/services/apiService';
-import { logoutUser } from '@/services/authService';
+import { useRefreshToken } from '@/hooks';
+import { setAccessToken, getAccessToken, logoutUser } from '@/services';
 import { PUBLIC_ROUTES } from '@/constants/routes';
-import LoadingScreen from '@/components/ui/loaders/LoadingScreen';
+import { LoadingScreen } from '@/components';
 import { isIOS } from '@/utils/device';
 
 /**

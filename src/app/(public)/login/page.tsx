@@ -4,12 +4,11 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import axios from 'axios';
 import toast from 'react-hot-toast';
-import { handlePostLogin } from '@/services/authService';
-import LoadingScreen from '@/components/ui/loaders/LoadingScreen';
-import ThemeToggle from '@/components/ui/ThemeToggle';
 import Image from 'next/image';
 import icon512 from '../../../../public/icon-512.png';
-import { useRedirectIfAuthenticated } from '@/hooks/useRedirectIfAuthenticated';
+import { handlePostLogin } from '@/services';
+import { LoadingScreen, ThemeToggle } from '@/components/ui';
+import { useRedirectIfAuthenticated } from '@/hooks';
 
 export default function LoginPage() {
   const router = useRouter();

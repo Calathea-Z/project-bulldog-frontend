@@ -1,8 +1,6 @@
 'use client';
 
-import React from 'react';
-
-export default function SkeletonRow() {
+export function SkeletonRow() {
   return (
     <div
       className="animate-pulse flex items-center space-x-4 p-4 border border-gray-700 rounded bg-surface"
