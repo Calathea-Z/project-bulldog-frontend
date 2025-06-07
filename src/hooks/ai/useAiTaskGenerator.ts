@@ -25,16 +25,7 @@ interface AiTaskGeneratorReturn {
  * - Review and confirm generated tasks
  * - Save approved tasks and summary to the database
  *
- * @returns {Object} Object containing state and handlers for AI task generation
- * @property {string} aiInput - The current text input for AI processing
- * @property {Function} setAiInput - Function to update the AI input text
- * @property {boolean} isAiLoading - Loading state during AI processing
- * @property {Array<{text: string}>} reviewActionItems - Generated action items awaiting review
- * @property {string} reviewSummary - Generated summary awaiting review
- * @property {boolean} showReview - Controls visibility of review modal
- * @property {Function} setShowReview - Function to toggle review modal
- * @property {Function} handleAiCreate - Function to trigger AI task generation
- * @property {Function} handleConfirmSave - Function to save approved action items and summary
+ * @returns AiTaskGeneratorReturn
  */
 export function useAiTaskGenerator(): AiTaskGeneratorReturn {
   const generateAi = useGenerateAi();
@@ -79,8 +70,6 @@ export function useAiTaskGenerator(): AiTaskGeneratorReturn {
    * Saves approved action items and summary to the database
    * Clears input and closes review modal on success
    * Shows error toast on failure
-   *
-   * @param {Array<{text: string}>} approvedActionItems - Action items approved by user
    */
   const handleConfirmSave = async (approvedActionItems: MinimalActionItem[]) => {
     try {
