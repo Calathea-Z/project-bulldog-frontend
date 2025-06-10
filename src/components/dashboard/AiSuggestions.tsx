@@ -7,7 +7,7 @@ interface AiSuggestionsProps {
   timeSensitiveTasks?: number;
 }
 
-export function AiSuggestions({ lastSummary, timeSensitiveTasks = 0 }: AiSuggestionsProps) {
+export default function AiSuggestions({ lastSummary, timeSensitiveTasks = 0 }: AiSuggestionsProps) {
   return (
     <div className="space-y-4 mb-6">
       {lastSummary && (

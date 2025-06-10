@@ -11,7 +11,7 @@ interface TaskCreationFabProps {
   onAiCreate: () => void;
 }
 
-export function TaskCreationFab({
+export default function TaskCreationFab({
   expanded,
   setExpanded,
   onTextInput,

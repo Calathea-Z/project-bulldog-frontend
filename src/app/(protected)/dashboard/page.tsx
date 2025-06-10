@@ -4,9 +4,9 @@ import { logoutUser } from '@/services';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
-import { EnhancedTaskList } from '@/components/ActionItems';
-import { AiSuggestions } from '@/components/dashboard/AiSuggestions';
-import { TaskCreationFab } from '@/components/dashboard/TaskCreationFab';
+import { EnhancedTaskList } from '@/components/actionItems';
+import AiSuggestions from '@/components/dashboard/AiSuggestions';
+import TaskCreationFab from '@/components/dashboard/TaskCreationFab';
 import { FullScreenModal } from '@/components/ui/FullScreenModal';
 import AiTaskFullScreenModal from '@/components/ui/AiTaskFullScreenModal';
 import {
