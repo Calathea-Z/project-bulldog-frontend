@@ -4,10 +4,21 @@ import { logoutUser } from '@/services';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
+import { CollapsibleAiInput, EnhancedTaskList } from '@/components/ActionItems';
+import {
+  useActionItems,
+  useToggleActionItemDone,
+  useDeleteActionItem,
+  useUpdateActionItem,
+} from '@/hooks';
 
 export default function DashboardPage() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const { data: items = [], isLoading } = useActionItems();
+  const toggleDone = useToggleActionItemDone();
+  const deleteActionItem = useDeleteActionItem();
+  const updateActionItem = useUpdateActionItem();
 
   const handleLogout = async () => {
     setLoading(true);
@@ -24,23 +35,37 @@ export default function DashboardPage() {
   };
 
   return (
-    <main className="p-4">
-      <h1 className="text-2xl font-semibold">Welcome to Bulldog Assistant</h1>
-      <p>{`You're successfully logged in 🎉`}</p>
-      <button
-        onClick={handleLogout}
-        disabled={loading}
-        className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 transition disabled:opacity-50 flex items-center gap-2"
-      >
-        {loading ? (
-          <>
-            <span className="animate-spin rounded-full h-4 w-4 border-t-2 border-white"></span>
-            Logging out…
-          </>
-        ) : (
-          'Logout'
-        )}
-      </button>
+    <main className="p-4 max-w-4xl mx-auto">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-semibold">Dashboard</h1>
+        <button
+          onClick={handleLogout}
+          disabled={loading}
+          className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 transition disabled:opacity-50 flex items-center gap-2"
+        >
+          {loading ? (
+            <>
+              <span className="animate-spin rounded-full h-4 w-4 border-t-2 border-white"></span>
+              Logging out…
+            </>
+          ) : (
+            'Logout'
+          )}
+        </button>
+      </div>
+
+      <CollapsibleAiInput />
+
+      <div className="mt-8">
+        <h2 className="text-xl font-semibold mb-4">Your Tasks</h2>
+        <EnhancedTaskList
+          items={items}
+          onToggle={(id) => toggleDone.mutate(id)}
+          onDelete={(id) => deleteActionItem.mutate(id)}
+          onUpdate={updateActionItem}
+          isLoading={isLoading}
+        />
+      </div>
     </main>
   );
 }
