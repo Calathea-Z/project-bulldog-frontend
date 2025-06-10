@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Plus, X } from 'lucide-react';
 import { useAiTaskGenerator } from '@/hooks/ai/useAiTaskGenerator';
+import TypewriterThinking from './TypewriterThinking';
 
 interface AiTaskFullScreenModalProps {
   open: boolean;
@@ -76,10 +77,6 @@ export default function AiTaskFullScreenModal({ open, onClose }: AiTaskFullScree
         <div className="flex-1 overflow-y-auto p-4">
           {!showReview ? (
             <>
-              <h2 className="text-base font-semibold mb-2 flex items-center gap-2">
-                <Plus className="w-4 h-4 text-blue-600" />
-                Create Tasks With AI
-              </h2>
               <textarea
                 className="w-full rounded border border-zinc-300 dark:border-zinc-700 p-2 mb-2 text-sm bg-white dark:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 rows={3}
@@ -104,7 +101,7 @@ export default function AiTaskFullScreenModal({ open, onClose }: AiTaskFullScree
                   Generate Tasks
                 </button>
               </div>
-              {isAiLoading && <div className="mt-2 text-xs text-blue-600">Thinking…</div>}
+              {isAiLoading && <TypewriterThinking />}
             </>
           ) : (
             <>
@@ -116,11 +113,13 @@ export default function AiTaskFullScreenModal({ open, onClose }: AiTaskFullScree
                   )}
                   {editableTasks.map((task, index) => (
                     <li key={index} className="flex items-center gap-2">
-                      <input
-                        type="text"
+                      <textarea
                         value={task.text}
                         onChange={(e) => handleTaskEdit(index, e.target.value)}
-                        className="flex-1 border border-zinc-300 dark:border-zinc-700 rounded px-3 py-1 text-sm bg-white dark:bg-zinc-800"
+                        className="flex-1 border border-zinc-300 dark:border-zinc-700 rounded px-3 py-2 text-sm bg-white dark:bg-zinc-800 resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[40px] max-h-[160px] overflow-y-auto"
+                        rows={2}
+                        maxLength={1000}
+                        aria-label={`Edit action item ${index + 1}`}
                       />
                       <button
                         onClick={() => handleTaskDelete(index)}
