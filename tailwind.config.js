@@ -15,6 +15,16 @@ module.exports = {
         secondary: 'var(--color-secondary)',
         accent: 'var(--color-accent)',
       },
+      animation: {
+        'bounce-slow': 'bounce 2.5s infinite',
+        typewriter: 'typewriter 2s steps(30, end) infinite',
+      },
+      keyframes: {
+        typewriter: {
+          '0%': { width: '0%' },
+          '100%': { width: '100%' },
+        },
+      },
     },
   },
   plugins: [],

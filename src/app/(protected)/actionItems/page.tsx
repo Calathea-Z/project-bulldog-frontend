@@ -9,13 +9,9 @@ import {
   useUpdateActionItem,
 } from '@/hooks';
 import { useAiTaskGenerator } from '@/hooks/ai/useAiTaskGenerator';
-import {
-  ActionItemRow,
-  ConfirmAiTasksModal,
-  AiInputPanel,
-  NewActionItemForm,
-  SkeletonRow,
-} from '@/components';
+import { ConfirmAiTasksModal, AiInputPanel, NewActionItemForm, SkeletonRow } from '@/components';
+import { sortActionItems } from '@/utils/sortActionItems';
+import ActionItemList from '@/components/ActionItems/ActionItemList';
 
 export default function ActionItemsPage() {
   const { data: items = [], isLoading, isError } = useActionItems();
@@ -23,6 +19,7 @@ export default function ActionItemsPage() {
   const toggleDone = useToggleActionItemDone();
   const deleteActionItem = useDeleteActionItem();
   const updateActionItem = useUpdateActionItem();
+  const sortedItems = sortActionItems(items);
 
   const {
     aiInput,
@@ -56,14 +53,6 @@ export default function ActionItemsPage() {
       },
     );
   };
-
-  const sorted = [...items].sort((a, b) => {
-    if (a.isDone !== b.isDone) return a.isDone ? 1 : -1;
-    if (a.dueAt && b.dueAt) return new Date(a.dueAt).getTime() - new Date(b.dueAt).getTime();
-    if (a.dueAt) return -1;
-    if (b.dueAt) return 1;
-    return 0;
-  });
 
   if (isLoading) {
     return (
@@ -110,17 +99,12 @@ export default function ActionItemsPage() {
         handleAdd={handleAdd}
       />
 
-      <ul className="space-y-2 mt-4" role="list" aria-label="Action items list">
-        {sorted.map((item) => (
-          <ActionItemRow
-            key={item.id}
-            item={item}
-            handleToggle={(id) => toggleDone.mutate(id)}
-            handleDelete={(id) => deleteActionItem.mutate(id)}
-            updateActionItem={updateActionItem}
-          />
-        ))}
-      </ul>
+      <ActionItemList
+        items={sortedItems}
+        onToggle={(id) => toggleDone.mutate(id)}
+        onDelete={(id) => deleteActionItem.mutate(id)}
+        onUpdate={updateActionItem}
+      />
 
       <ConfirmAiTasksModal
         isOpen={showReview}
