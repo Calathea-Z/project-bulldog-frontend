@@ -4,7 +4,11 @@ import { logoutUser } from '@/services';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
-import { CollapsibleAiInput, EnhancedTaskList } from '@/components/ActionItems';
+import { EnhancedTaskList } from '@/components/ActionItems';
+import { AiSuggestions } from '@/components/dashboard/AiSuggestions';
+import { TaskCreationFab } from '@/components/dashboard/TaskCreationFab';
+import { FullScreenModal } from '@/components/ui/FullScreenModal';
+import AiTaskFullScreenModal from '@/components/ui/AiTaskFullScreenModal';
 import {
   useActionItems,
   useToggleActionItemDone,
@@ -16,6 +20,7 @@ import { Info, X } from 'lucide-react';
 export default function DashboardPage() {
   const [loading, setLoading] = useState(false);
   const [showNotice, setShowNotice] = useState(false);
+  const [showAiInput, setShowAiInput] = useState(false);
   const router = useRouter();
   const { data: items = [], isLoading } = useActionItems();
   const toggleDone = useToggleActionItemDone();
@@ -51,8 +56,35 @@ export default function DashboardPage() {
     }
   };
 
+  const handleTextInput = () => {
+    // TODO: Implement text input modal/form
+    toast.success('Manual input coming soon!');
+  };
+
+  const handleFileUpload = () => {
+    // TODO: Implement file upload
+    toast.success('File upload coming soon!');
+  };
+
+  const handleVoiceCapture = () => {
+    // TODO: Implement voice capture
+    toast.success('Voice capture coming soon!');
+  };
+
+  const handleAiCreate = () => {
+    setShowAiInput(true);
+  };
+
+  // Calculate time-sensitive tasks (due today or overdue)
+  const timeSensitiveTasks = items.filter((item) => {
+    if (!item.dueAt) return false;
+    const dueDate = new Date(item.dueAt);
+    const today = new Date();
+    return !item.isDone && dueDate <= today;
+  }).length;
+
   return (
-    <main className="p-4 max-w-4xl mx-auto">
+    <main className="p-4 max-w-4xl mx-auto pb-24">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-semibold">Dashboard</h1>
         <button
@@ -87,7 +119,18 @@ export default function DashboardPage() {
         </div>
       )}
 
-      <CollapsibleAiInput />
+      <FullScreenModal
+        open={showAiInput}
+        onClose={() => setShowAiInput(false)}
+        title="Create Tasks With AI"
+      >
+        <AiTaskFullScreenModal open={showAiInput} onClose={() => setShowAiInput(false)} />
+      </FullScreenModal>
+
+      <AiSuggestions
+        lastSummary="Your tasks are well organized. Consider prioritizing the time-sensitive items."
+        timeSensitiveTasks={timeSensitiveTasks}
+      />
 
       <div className="mt-8">
         <h2 className="text-xl font-semibold mb-4">Your Tasks</h2>
@@ -99,6 +142,13 @@ export default function DashboardPage() {
           isLoading={isLoading}
         />
       </div>
+
+      <TaskCreationFab
+        onTextInput={handleTextInput}
+        onFileUpload={handleFileUpload}
+        onVoiceCapture={handleVoiceCapture}
+        onAiCreate={handleAiCreate}
+      />
     </main>
   );
 }
