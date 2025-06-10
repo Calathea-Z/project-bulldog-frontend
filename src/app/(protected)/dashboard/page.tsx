@@ -21,6 +21,7 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(false);
   const [showNotice, setShowNotice] = useState(false);
   const [showAiInput, setShowAiInput] = useState(false);
+  const [fabExpanded, setFabExpanded] = useState(false);
   const router = useRouter();
   const { data: items = [], isLoading } = useActionItems();
   const toggleDone = useToggleActionItemDone();
@@ -56,22 +57,25 @@ export default function DashboardPage() {
     }
   };
 
+  const closeFab = () => setFabExpanded(false);
+
   const handleTextInput = () => {
-    // TODO: Implement text input modal/form
+    closeFab();
     toast.success('Manual input coming soon!');
   };
 
   const handleFileUpload = () => {
-    // TODO: Implement file upload
+    closeFab();
     toast.success('File upload coming soon!');
   };
 
   const handleVoiceCapture = () => {
-    // TODO: Implement voice capture
+    closeFab();
     toast.success('Voice capture coming soon!');
   };
 
   const handleAiCreate = () => {
+    closeFab();
     setShowAiInput(true);
   };
 
@@ -144,6 +148,8 @@ export default function DashboardPage() {
       </div>
 
       <TaskCreationFab
+        expanded={fabExpanded}
+        setExpanded={setFabExpanded}
         onTextInput={handleTextInput}
         onFileUpload={handleFileUpload}
         onVoiceCapture={handleVoiceCapture}

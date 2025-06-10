@@ -1,9 +1,10 @@
 'use client';
 
-import { useState } from 'react';
 import { Plus, FileText, Mic, Type, Sparkles } from 'lucide-react';
 
 interface TaskCreationFabProps {
+  expanded: boolean;
+  setExpanded: (expanded: boolean) => void;
   onTextInput: () => void;
   onFileUpload: () => void;
   onVoiceCapture: () => void;
@@ -11,23 +12,23 @@ interface TaskCreationFabProps {
 }
 
 export function TaskCreationFab({
+  expanded,
+  setExpanded,
   onTextInput,
   onFileUpload,
   onVoiceCapture,
   onAiCreate,
 }: TaskCreationFabProps) {
-  const [isExpanded, setIsExpanded] = useState(false);
-
   const handleAction = (action: () => void) => {
-    setIsExpanded(false);
+    setExpanded(false);
     action();
   };
 
-  const toggleExpand = () => setIsExpanded(!isExpanded);
+  const toggleExpand = () => setExpanded(!expanded);
 
   return (
     <div className="fixed bottom-6 right-6 z-50">
-      {isExpanded && (
+      {expanded && (
         <div className="absolute bottom-16 right-0 flex flex-col gap-2">
           <button
             onClick={() => handleAction(onAiCreate)}
@@ -63,9 +64,9 @@ export function TaskCreationFab({
       <button
         onClick={toggleExpand}
         className="bg-blue-600 text-white rounded-full p-4 shadow-lg hover:bg-blue-700 transition-colors"
-        aria-label={isExpanded ? 'Close task creation menu' : 'Open task creation menu'}
+        aria-label={expanded ? 'Close task creation menu' : 'Open task creation menu'}
       >
-        <Plus className={`w-6 h-6 transition-transform ${isExpanded ? 'rotate-45' : ''}`} />
+        <Plus className={`w-6 h-6 transition-transform ${expanded ? 'rotate-45' : ''}`} />
       </button>
     </div>
   );
