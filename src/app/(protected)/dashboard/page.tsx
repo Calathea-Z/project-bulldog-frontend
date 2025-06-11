@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { EnhancedTaskList, AiSuggestions, TaskCreationFab } from '@/components';
@@ -14,21 +14,33 @@ import {
   useDeleteActionItem,
   useUpdateActionItem,
 } from '@/hooks';
-import { Info, X } from 'lucide-react';
+import { AnimatePresence, motion } from 'framer-motion';
+import { usePullToRefresh } from '@/hooks/usePullToRefresh';
+import PullIndicator from '@/components/ui/PullIndicator';
 
 export default function DashboardPage() {
-  const [showNotice, setShowNotice] = useState(false);
   const [showAiInput, setShowAiInput] = useState(false);
   const [fabExpanded, setFabExpanded] = useState(false);
   const router = useRouter();
-  const { data: items = [], isLoading } = useActionItems();
+
+  const { data: items = [], isLoading, refetch } = useActionItems();
+
   const toggleDone = useToggleActionItemDone();
   const deleteActionItem = useDeleteActionItem();
   const updateActionItem = useUpdateActionItem();
 
-  const handleDismissNotice = () => {
-    setShowNotice(false);
+  const handleRefresh = async () => {
+    await refetch();
+    toast.success('Refreshed!');
   };
+
+  const { isPulling, isRefreshing, pullPercent, offsetY } = usePullToRefresh(handleRefresh);
+
+  useEffect(() => {
+    const onFocus = () => refetch();
+    window.addEventListener('focus', onFocus);
+    return () => window.removeEventListener('focus', onFocus);
+  }, [refetch]);
 
   const closeFab = () => setFabExpanded(false);
 
@@ -52,13 +64,15 @@ export default function DashboardPage() {
     setShowAiInput(true);
   };
 
-  // Calculate time-sensitive tasks (due today or overdue)
   const timeSensitiveTasks = items.filter((item) => {
     if (!item.dueAt) return false;
     const dueDate = new Date(item.dueAt);
     const today = new Date();
     return !item.isDone && dueDate <= today;
   }).length;
+
+  const lastSummary =
+    'Your tasks are well organized. Consider prioritizing the time-sensitive items.';
 
   return (
     <main className="p-4 max-w-4xl mx-auto pb-24">
@@ -77,21 +91,42 @@ export default function DashboardPage() {
         <AiTaskFullScreenModal open={showAiInput} onClose={() => setShowAiInput(false)} />
       </FullScreenModal>
 
-      <AiSuggestions
-        lastSummary="Your tasks are well organized. Consider prioritizing the time-sensitive items."
-        timeSensitiveTasks={timeSensitiveTasks}
-      />
+      {/* ✅ Animate full content shift while pulling */}
+      <motion.div
+        className="space-y-8"
+        animate={{ y: offsetY }}
+        transition={{ type: 'spring', stiffness: 180, damping: 20 }}
+      >
+        {(isPulling || isRefreshing) && (
+          <PullIndicator isRefreshing={isRefreshing} percent={pullPercent} />
+        )}
 
-      <div className="mt-8">
-        <h2 className="text-xl font-semibold mb-4">Your Tasks</h2>
-        <EnhancedTaskList
-          items={items}
-          onToggle={(id) => toggleDone.mutate(id)}
-          onDelete={(id) => deleteActionItem.mutate(id)}
-          onUpdate={updateActionItem}
-          isLoading={isLoading}
-        />
-      </div>
+        <AnimatePresence mode="wait">
+          {(timeSensitiveTasks > 0 || !!lastSummary) && (
+            <motion.div
+              key="ai-suggestions-wrapper"
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.3 }}
+              className="overflow-hidden"
+            >
+              <AiSuggestions lastSummary={lastSummary} timeSensitiveTasks={timeSensitiveTasks} />
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        <div>
+          <h2 className="text-xl font-semibold mb-4">Your Tasks</h2>
+          <EnhancedTaskList
+            items={items}
+            onToggle={(id) => toggleDone.mutate(id)}
+            onDelete={(id) => deleteActionItem.mutate(id)}
+            onUpdate={updateActionItem}
+            isLoading={isLoading}
+          />
+        </div>
+      </motion.div>
 
       <TaskCreationFab
         expanded={fabExpanded}
