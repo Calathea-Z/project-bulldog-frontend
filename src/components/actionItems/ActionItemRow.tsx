@@ -66,38 +66,53 @@ export default function ActionItemRow({
     >
       {isEditing ? (
         <div
-          className="flex flex-col sm:flex-row sm:items-center flex-1 space-y-2 sm:space-y-0 sm:space-x-3"
+          className="flex flex-col sm:flex-row sm:items-center flex-1 space-y-2 sm:space-y-0"
           role="form"
           aria-label="Edit action item form"
         >
-          {/* Text Input */}
-          <input
-            type="text"
-            value={editText}
-            onChange={(e) => setEditText(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') handleSave();
-              if (e.key === 'Escape') handleCancel();
-            }}
-            className="flex-1 rounded border border-gray-300 bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-            aria-label="Edit action item text"
-          />
-
-          {/* DatePicker for due date */}
-          <DatePicker
-            selected={editDueAt}
-            onChange={(date) => setEditDueAt(date)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') handleSave();
-              if (e.key === 'Escape') handleCancel();
-            }}
-            showTimeSelect
-            dateFormat="MMM d, yyyy h:mm aa"
-            placeholderText="Set due date"
-            className="rounded border border-gray-300 bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-            minDate={new Date()}
-            aria-label="Edit due date"
-          />
+          <div className="flex flex-1 gap-3">
+            <input
+              type="text"
+              value={editText}
+              onChange={(e) => setEditText(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') handleSave();
+                if (e.key === 'Escape') handleCancel();
+              }}
+              className="flex-1 rounded border border-accent bg-background px-3 py-2 text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary focus:ring-offset-0"
+              aria-label="Edit action item text"
+            />
+            <DatePicker
+              selected={editDueAt}
+              onChange={(date) => setEditDueAt(date)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') handleSave();
+                if (e.key === 'Escape') handleCancel();
+              }}
+              showTimeSelect
+              dateFormat="MMM d, yyyy h:mm aa"
+              placeholderText="Set due date"
+              className="rounded border border-accent bg-background px-3 py-2 text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary focus:ring-offset-0"
+              minDate={new Date()}
+              aria-label="Edit due date"
+            />
+          </div>
+          <div className="flex items-center space-x-3 mt-2 sm:mt-0 sm:ml-3">
+            <button
+              onClick={handleSave}
+              className="rounded bg-green-500 px-4 py-2 text-sm text-white hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-300"
+              aria-label="Save changes"
+            >
+              Save
+            </button>
+            <button
+              onClick={handleCancel}
+              className="rounded bg-gray-300 px-4 py-2 text-sm text-gray-700 hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-200"
+              aria-label="Cancel editing"
+            >
+              Cancel
+            </button>
+          </div>
         </div>
       ) : (
         <div className="flex items-center flex-1">
@@ -129,44 +144,6 @@ export default function ActionItemRow({
           </div>
         </div>
       )}
-
-      <div className="flex space-x-2">
-        {isEditing ? (
-          <>
-            <button
-              onClick={handleSave}
-              className="rounded bg-green-500 px-3 py-1 text-sm text-white hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-300"
-              aria-label="Save changes"
-            >
-              Save
-            </button>
-            <button
-              onClick={handleCancel}
-              className="rounded bg-gray-300 px-3 py-1 text-sm hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-200"
-              aria-label="Cancel editing"
-            >
-              Cancel
-            </button>
-          </>
-        ) : (
-          <>
-            <button
-              onClick={() => setIsEditing(true)}
-              className="text-sm text-blue-500 hover:underline focus:outline-none focus:ring-2 focus:ring-blue-200 px-2 py-1 rounded"
-              aria-label={`Edit action item "${item.text}"`}
-            >
-              Edit
-            </button>
-            <button
-              onClick={() => handleDelete(item.id)}
-              className="text-sm text-red-500 hover:underline focus:outline-none focus:ring-2 focus:ring-red-200 px-2 py-1 rounded"
-              aria-label={`Delete action item "${item.text}"`}
-            >
-              Delete
-            </button>
-          </>
-        )}
-      </div>
     </li>
   );
 }
