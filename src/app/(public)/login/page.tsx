@@ -62,7 +62,7 @@ export default function LoginPage() {
         className="w-full max-w-sm bg-surface shadow-xl rounded-xl p-6 space-y-4 border border-primary"
         aria-busy={isLoading}
       >
-        <div className="flex justify-center mb-4">
+        <div className="flex justify-center mb-4 rounded-md">
           <Image src={icon512} alt="Bulldog Logo" width={64} height={64} priority />
         </div>
 
