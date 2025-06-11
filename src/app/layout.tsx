@@ -1,6 +1,6 @@
 'use client';
 
-import './globals.css';
+import './styles/globals.css';
 import { ThemeProvider } from 'next-themes';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useState } from 'react';

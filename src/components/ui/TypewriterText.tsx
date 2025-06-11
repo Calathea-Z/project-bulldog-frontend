@@ -40,7 +40,7 @@ export const TypewriterText = ({
   }, [currentIndex, isDeleting, text, typingSpeed, deletingSpeed, pauseTime]);
 
   return (
-    <span>
+    <span className="shimmer-text">
       {displayText}
       <span className="animate-pulse">|</span>
     </span>

@@ -1,0 +1,23 @@
+@keyframes textShimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.shimmer-text {
+  background: linear-gradient(
+    90deg,
+    rgba(59, 130, 246, 0.2),
+    rgba(59, 130, 246, 0.8),
+    rgba(59, 130, 246, 0.2)
+  );
+  background-size: 200% 100%;
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  animation: textShimmer 4s linear infinite;
+}

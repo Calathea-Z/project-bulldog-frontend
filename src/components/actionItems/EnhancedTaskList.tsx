@@ -70,7 +70,7 @@ export default function EnhancedTaskList({
             placeholder="Search tasks..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 rounded border border-accent bg-surface text-text focus:outline-none focus:ring-2 focus:ring-primary"
+            className="w-full pl-10 pr-4 py-2 rounded border border-accent bg-surface text-text focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary focus:ring-offset-0"
           />
         </div>
         <button

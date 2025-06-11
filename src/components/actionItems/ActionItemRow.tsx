@@ -5,6 +5,9 @@ import { toast } from 'react-hot-toast';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { ActionItem } from '@/types/api';
+import { formatDueDate } from '@/utils/formatDate';
+import TextareaAutosize from 'react-textarea-autosize';
+import { Check, Pencil, Trash2 } from 'lucide-react';
 
 interface ActionItemRowProps {
   item: ActionItem;
@@ -57,115 +60,122 @@ export default function ActionItemRow({
     setIsEditing(false);
   };
 
+  const isOverdue = item.dueAt && new Date(item.dueAt) < new Date() && !item.isDone;
+
   return (
     <li
-      className="flex flex-col sm:flex-row sm:items-center justify-between rounded border border-accent bg-surface p-4 space-y-2 sm:space-y-0"
+      className={`rounded-xl px-4 py-3 shadow-sm transition-all duration-200 ease-in-out ${
+        isEditing
+          ? 'bg-muted/60 border border-border ring-1 ring-primary/20'
+          : 'bg-muted/60 border border-border'
+      }`}
       role="listitem"
-      aria-label={`Action item: ${item.text}`}
     >
       {isEditing ? (
-        <div
-          className="flex flex-col sm:flex-row sm:items-center flex-1 space-y-2 sm:space-y-0 sm:space-x-3"
-          role="form"
-          aria-label="Edit action item form"
-        >
-          {/* Text Input */}
-          <input
-            type="text"
+        <div className="flex flex-col gap-4 mt-1">
+          {/* Task Text */}
+          <TextareaAutosize
             value={editText}
             onChange={(e) => setEditText(e.target.value)}
-            className="flex-1 rounded border border-gray-300 bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-            aria-label="Edit action item text"
+            minRows={2}
+            maxRows={6}
+            autoFocus
+            className="w-full resize-none rounded-md border border-accent bg-background px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary shadow-sm"
+            aria-label="Edit task text"
           />
+          <div className="text-xs text-muted text-right mt-[-6px] mb-1">
+            {editText.length} characters
+          </div>
 
-          {/* DatePicker for due date */}
-          <DatePicker
-            selected={editDueAt}
-            onChange={(date) => setEditDueAt(date)}
-            showTimeSelect
-            dateFormat="MMM d, yyyy h:mm aa"
-            placeholderText="Set due date"
-            className="rounded border border-gray-300 bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-            minDate={new Date()}
-            aria-label="Edit due date"
-          />
+          {/* Due Date */}
+          <div className="relative text-sm text-muted w-full">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2">📅</span>
+            <DatePicker
+              selected={editDueAt}
+              onChange={(date) => setEditDueAt(date)}
+              showTimeSelect
+              dateFormat="MMM d, yyyy h:mm aa"
+              placeholderText="Set due date"
+              minDate={new Date()}
+              calendarClassName="react-datepicker"
+              popperPlacement="bottom-start"
+              popperModifiers={[
+                {
+                  name: 'offset',
+                  options: {
+                    offset: [0, 8],
+                  },
+                  fn: ({ x, y }) => ({ x, y }),
+                },
+              ]}
+              className="w-full pl-9 pr-3 py-2 rounded-md border border-accent bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+              aria-label="Edit due date"
+            />
+          </div>
+
+          {/* Buttons */}
+          <div className="flex justify-end gap-2 mt-1 pt-2">
+            <button
+              onClick={handleCancel}
+              className="text-xs rounded bg-gray-200 px-3 py-1.5 text-gray-800 hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400"
+            >
+              ❌ Cancel
+            </button>
+            <button
+              onClick={handleSave}
+              className="text-xs rounded bg-green-600 px-3 py-1.5 text-white hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-400"
+            >
+              ✅ Save
+            </button>
+          </div>
         </div>
       ) : (
-        <div className="flex items-center flex-1">
-          <input
-            type="checkbox"
-            checked={item.isDone}
-            onChange={() => handleToggle(item.id)}
-            className="mr-3 h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
-            aria-label={`Mark "${item.text}" as ${item.isDone ? 'incomplete' : 'done'}`}
-          />
-          <div>
-            <span
-              className={`${item.isDone ? 'line-through text-secondary' : ''}`}
-              aria-label={item.isDone ? `Completed: ${item.text}` : item.text}
+        <div className="flex flex-col justify-between min-h-[110px] gap-2">
+          {/* Top Row: Checkbox + Text */}
+          <div className="flex items-start gap-3">
+            <button
+              onClick={() => handleToggle(item.id)}
+              className="h-5 w-5 rounded-full border border-primary flex items-center justify-center transition bg-background"
+              aria-label={`Mark task "${item.text}" as ${item.isDone ? 'incomplete' : 'done'}`}
             >
-              {item.text}
-            </span>
-            {item.dueAt && (
-              <div
-                className="mt-1 text-xs text-gray-400"
-                aria-label={`Due date: ${new Date(item.dueAt).toLocaleDateString('en-US', {
-                  month: 'numeric',
-                  day: 'numeric',
-                  hour: 'numeric',
-                  minute: '2-digit',
-                })}`}
+              <Check
+                className={`w-3.5 h-3.5 transition-opacity ${
+                  item.isDone ? 'opacity-100 text-primary' : 'opacity-0'
+                }`}
+              />
+            </button>
+            <p className="text-sm font-medium leading-snug text-text break-words">{item.text}</p>
+          </div>
+
+          {/* Bottom Row: Due date + actions */}
+          <div className="flex justify-between items-center text-xs text-muted ml-8">
+            <div className="flex gap-2 items-center">
+              <span>📅 {item.dueAt ? formatDueDate(item.dueAt) : 'No due date'}</span>
+              {isOverdue && (
+                <span className="text-red-500 font-semibold flex items-center gap-1">
+                  🔴 Overdue
+                </span>
+              )}
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setIsEditing(true)}
+                className="text-primary hover:scale-110 transition"
+                aria-label={`Edit action item "${item.text}"`}
               >
-                Due:{' '}
-                {new Date(item.dueAt).toLocaleDateString('en-US', {
-                  month: 'numeric',
-                  day: 'numeric',
-                  hour: 'numeric',
-                  minute: '2-digit',
-                })}
-              </div>
-            )}
+                <Pencil className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => handleDelete(item.id)}
+                className="text-destructive hover:scale-110 transition"
+                aria-label={`Delete action item "${item.text}"`}
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            </div>
           </div>
         </div>
       )}
-
-      <div className="flex space-x-2">
-        {isEditing ? (
-          <>
-            <button
-              onClick={handleSave}
-              className="rounded bg-green-500 px-3 py-1 text-sm text-white hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-300"
-              aria-label="Save changes"
-            >
-              Save
-            </button>
-            <button
-              onClick={handleCancel}
-              className="rounded bg-gray-300 px-3 py-1 text-sm hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-200"
-              aria-label="Cancel editing"
-            >
-              Cancel
-            </button>
-          </>
-        ) : (
-          <>
-            <button
-              onClick={() => setIsEditing(true)}
-              className="text-sm text-blue-500 hover:underline focus:outline-none focus:ring-2 focus:ring-blue-200 px-2 py-1 rounded"
-              aria-label={`Edit action item "${item.text}"`}
-            >
-              Edit
-            </button>
-            <button
-              onClick={() => handleDelete(item.id)}
-              className="text-sm text-red-500 hover:underline focus:outline-none focus:ring-2 focus:ring-red-200 px-2 py-1 rounded"
-              aria-label={`Delete action item "${item.text}"`}
-            >
-              Delete
-            </button>
-          </>
-        )}
-      </div>
     </li>
   );
 }
