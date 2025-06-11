@@ -2,6 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 @import './datepicker.css';
+@import './effects.css';
 
 /* === Default: Dark Mode === */
 :root {
