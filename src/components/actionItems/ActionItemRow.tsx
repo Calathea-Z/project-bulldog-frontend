@@ -5,6 +5,7 @@ import { toast } from 'react-hot-toast';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { ActionItem } from '@/types/api';
+import { formatDueDate } from '@/utils/formatDate';
 
 interface ActionItemRowProps {
   item: ActionItem;
@@ -74,6 +75,10 @@ export default function ActionItemRow({
             type="text"
             value={editText}
             onChange={(e) => setEditText(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') handleSave();
+              if (e.key === 'Escape') handleCancel();
+            }}
             className="flex-1 rounded border border-gray-300 bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
             aria-label="Edit action item text"
           />
@@ -82,6 +87,10 @@ export default function ActionItemRow({
           <DatePicker
             selected={editDueAt}
             onChange={(date) => setEditDueAt(date)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') handleSave();
+              if (e.key === 'Escape') handleCancel();
+            }}
             showTimeSelect
             dateFormat="MMM d, yyyy h:mm aa"
             placeholderText="Set due date"
@@ -109,20 +118,12 @@ export default function ActionItemRow({
             {item.dueAt && (
               <div
                 className="mt-1 text-xs text-gray-400"
-                aria-label={`Due date: ${new Date(item.dueAt).toLocaleDateString('en-US', {
-                  month: 'numeric',
-                  day: 'numeric',
-                  hour: 'numeric',
-                  minute: '2-digit',
-                })}`}
+                aria-label={`Due date: ${formatDueDate(item.dueAt)}`}
               >
-                Due:{' '}
-                {new Date(item.dueAt).toLocaleDateString('en-US', {
-                  month: 'numeric',
-                  day: 'numeric',
-                  hour: 'numeric',
-                  minute: '2-digit',
-                })}
+                Due: {formatDueDate(item.dueAt)}
+                {new Date(item.dueAt) < new Date() && !item.isDone && (
+                  <span className="ml-2 text-red-400 font-medium">(Overdue)</span>
+                )}
               </div>
             )}
           </div>
