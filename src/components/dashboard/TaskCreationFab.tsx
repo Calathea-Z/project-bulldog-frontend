@@ -1,8 +1,8 @@
 'use client';
 
-import { Plus, FileText, Mic, Type, Sparkles } from 'lucide-react';
+import { Plus, FileText, Mic, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import AiTaskModal from '../ui/AiTaskModal'; // 🆕 Unified modal
 
 interface TaskCreationFabProps {
@@ -16,10 +16,34 @@ export default function TaskCreationFab({
   expanded,
   setExpanded,
   onVoiceCapture,
-  onAiCreate,
 }: TaskCreationFabProps) {
   const [taskModalOpen, setTaskModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<'manual' | 'file'>('manual');
+  const [atTop, setAtTop] = useState(true);
+  const [isScrolling, setIsScrolling] = useState(false);
+  const [isScrollingDown, setIsScrollingDown] = useState(false);
+  const scrollTimeout = useRef<NodeJS.Timeout | null>(null);
+  const prevScrollY = useRef(0);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setAtTop(window.scrollY < 50);
+      setIsScrolling(true);
+      if (window.scrollY > prevScrollY.current) {
+        setIsScrollingDown(true);
+      } else {
+        setIsScrollingDown(false);
+      }
+      prevScrollY.current = window.scrollY;
+      if (scrollTimeout.current) clearTimeout(scrollTimeout.current);
+      scrollTimeout.current = setTimeout(() => setIsScrolling(false), 200);
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      if (scrollTimeout.current) clearTimeout(scrollTimeout.current);
+    };
+  }, []);
 
   const handleAction = (action: () => void) => {
     setExpanded(false);
@@ -56,7 +80,7 @@ export default function TaskCreationFab({
   ];
 
   return (
-    <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50">
+    <div className="fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] right-4 sm:right-6 z-50">
       {/* Backdrop */}
       <AnimatePresence>
         {expanded && (
@@ -115,8 +139,14 @@ export default function TaskCreationFab({
       {/* Main FAB */}
       <button
         onClick={toggleExpand}
-        className="bg-blue-600 text-white rounded-full p-4 shadow-lg hover:bg-blue-700 transition-colors"
-        aria-label={expanded ? 'Close task creation menu' : 'Open task creation menu'}
+        className={[
+          'bg-blue-600 text-white rounded-full p-4 shadow-lg hover:bg-blue-700 transition-transform duration-200',
+          !atTop && isScrolling && isScrollingDown
+            ? 'scale-90 opacity-80'
+            : 'scale-100 opacity-100',
+          'active:scale-95 active:shadow-inner',
+        ].join(' ')}
+        aria-label="Add task"
         aria-expanded={expanded}
       >
         <Plus
@@ -126,7 +156,6 @@ export default function TaskCreationFab({
         />
       </button>
 
-      {/* Unified AI Modal */}
       <AiTaskModal open={taskModalOpen} onClose={() => setTaskModalOpen(false)} mode={modalMode} />
     </div>
   );
