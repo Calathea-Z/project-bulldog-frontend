@@ -131,8 +131,6 @@ export default function DashboardPage() {
       <TaskCreationFab
         expanded={fabExpanded}
         setExpanded={setFabExpanded}
-        onTextInput={handleTextInput}
-        onFileUpload={handleFileUpload}
         onVoiceCapture={handleVoiceCapture}
         onAiCreate={handleAiCreate}
       />
