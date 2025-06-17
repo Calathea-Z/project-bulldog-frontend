@@ -18,7 +18,7 @@ interface ActionItemRowProps {
   updateActionItem: ReturnType<typeof useUpdateActionItem>;
 }
 
-function _ActionItemRow({
+export function ActionItemRow({
   item,
   handleToggle,
   handleDelete,
@@ -227,7 +227,7 @@ function _ActionItemRow({
   );
 }
 
-export const ActionItemRow = React.memo(_ActionItemRow, (prev, next) => {
+export const MemoizedActionItemRow = React.memo(ActionItemRow, (prev, next) => {
   const a = prev.item;
   const b = next.item;
   return (

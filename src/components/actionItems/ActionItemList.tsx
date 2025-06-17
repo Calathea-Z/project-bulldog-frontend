@@ -1,5 +1,5 @@
 import { AnimatePresence } from 'framer-motion';
-import { ActionItemRow } from '@/components';
+import { MemoizedActionItemRow } from '@/components';
 import { ActionItemListProps } from '@/types/ui';
 
 export function ActionItemList({ items, onToggle, onDelete, onUpdate }: ActionItemListProps) {
@@ -7,7 +7,7 @@ export function ActionItemList({ items, onToggle, onDelete, onUpdate }: ActionIt
     <ul className="space-y-2 mt-4" role="list" aria-label="Action items list">
       <AnimatePresence mode="popLayout">
         {items.map((item) => (
-          <ActionItemRow
+          <MemoizedActionItemRow
             key={item.id}
             item={item}
             handleToggle={onToggle}
