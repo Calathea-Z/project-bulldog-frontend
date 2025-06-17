@@ -2,13 +2,9 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { logoutUser } from '@/services';
 import toast from 'react-hot-toast';
-
-interface LogoutButtonProps {
-  className?: string;
-  label?: string;
-}
+import { logoutUser } from '@/services';
+import { LogoutButtonProps } from '@/types';
 
 export const LogoutButton = ({ className = '', label = 'Logout' }: LogoutButtonProps) => {
   const [loading, setLoading] = useState(false);

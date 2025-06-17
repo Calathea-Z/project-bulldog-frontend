@@ -1,27 +1,28 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
-import { EnhancedTaskList, AiSuggestions, TaskCreationFab } from '@/components';
-import { FullScreenModal } from '@/components/ui/FullScreenModal';
-import { LogoutButton } from '@/components/ui/LogoutButton';
-import { PrivacyNotice } from '@/components/ui/PrivacyNotice';
-import AiTaskFullScreenModal from '@/components/ui/AiTaskFullScreenModal';
+import {
+  EnhancedTaskList,
+  AiSuggestions,
+  TaskCreationFab,
+  LogoutButton,
+  PrivacyNotice,
+  AiTaskModal,
+  PullIndicator,
+} from '@/components';
 import {
   useActionItems,
   useToggleActionItemDone,
   useDeleteActionItem,
   useUpdateActionItem,
+  usePullToRefresh,
 } from '@/hooks';
 import { AnimatePresence, motion } from 'framer-motion';
-import { usePullToRefresh } from '@/hooks/usePullToRefresh';
-import PullIndicator from '@/components/ui/PullIndicator';
 
 export default function DashboardPage() {
   const [showAiInput, setShowAiInput] = useState(false);
   const [fabExpanded, setFabExpanded] = useState(false);
-  const router = useRouter();
 
   const { data: items = [], isLoading, refetch } = useActionItems();
 
@@ -37,31 +38,25 @@ export default function DashboardPage() {
   const { isPulling, isRefreshing, pullPercent, offsetY } = usePullToRefresh(handleRefresh);
 
   useEffect(() => {
-    const onFocus = () => refetch();
+    const timeoutRef = { current: null as NodeJS.Timeout | null };
+
+    const onFocus = () => {
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+      timeoutRef.current = setTimeout(() => refetch(), 100);
+    };
+
     window.addEventListener('focus', onFocus);
-    return () => window.removeEventListener('focus', onFocus);
+    return () => {
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+      window.removeEventListener('focus', onFocus);
+    };
   }, [refetch]);
 
   const closeFab = () => setFabExpanded(false);
 
-  const handleTextInput = () => {
-    closeFab();
-    toast.success('Manual input coming soon!');
-  };
-
-  const handleFileUpload = () => {
-    closeFab();
-    toast.success('File upload coming soon!');
-  };
-
-  const handleVoiceCapture = () => {
+  const handleVoiceCapture = async () => {
     closeFab();
     toast.success('Voice capture coming soon!');
-  };
-
-  const handleAiCreate = () => {
-    closeFab();
-    setShowAiInput(true);
   };
 
   const timeSensitiveTasks = items.filter((item) => {
@@ -71,6 +66,7 @@ export default function DashboardPage() {
     return !item.isDone && dueDate <= today;
   }).length;
 
+  //TODO: Implement this, right now is just a placeholder
   const lastSummary =
     'Your tasks are well organized. Consider prioritizing the time-sensitive items.';
 
@@ -83,13 +79,7 @@ export default function DashboardPage() {
 
       <PrivacyNotice />
 
-      <FullScreenModal
-        open={showAiInput}
-        onClose={() => setShowAiInput(false)}
-        title="Create Tasks With AI"
-      >
-        <AiTaskFullScreenModal open={showAiInput} onClose={() => setShowAiInput(false)} />
-      </FullScreenModal>
+      <AiTaskModal open={showAiInput} onClose={() => setShowAiInput(false)} mode="manual" />
 
       {/* ✅ Animate full content shift while pulling */}
       <motion.div
@@ -132,7 +122,6 @@ export default function DashboardPage() {
         expanded={fabExpanded}
         setExpanded={setFabExpanded}
         onVoiceCapture={handleVoiceCapture}
-        onAiCreate={handleAiCreate}
       />
     </main>
   );

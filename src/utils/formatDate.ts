@@ -1,12 +1,21 @@
-export function formatDueDate(date: string | Date, options?: { dateOnly?: boolean }) {
+export function formatDueDate(date: string | Date, options?: { dateOnly?: boolean }): string {
   const d = typeof date === 'string' ? new Date(date) : date;
-  return options?.dateOnly
-    ? d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
-    : d.toLocaleString(undefined, {
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric',
-        hour: 'numeric',
-        minute: '2-digit',
-      });
+
+  if (options?.dateOnly) {
+    // Avoid timezone shift: interpret the date as UTC midnight
+    return d.toLocaleDateString(undefined, {
+      timeZone: 'UTC',
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    });
+  }
+
+  return d.toLocaleString(undefined, {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  });
 }

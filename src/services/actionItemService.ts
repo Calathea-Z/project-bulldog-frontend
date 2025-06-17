@@ -1,5 +1,5 @@
-import { api } from './apiService';
-import { ActionItem } from '@/types/api';
+import { api } from '@/services';
+import { ActionItem } from '@/types';
 
 export const actionItemService = {
   getAll: (): Promise<ActionItem[]> => api.get('/actionitems').then((r) => r.data),

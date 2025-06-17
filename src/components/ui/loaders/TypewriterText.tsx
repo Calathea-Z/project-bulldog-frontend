@@ -1,11 +1,5 @@
 import { useEffect, useState } from 'react';
-
-interface TypewriterTextProps {
-  text: string;
-  typingSpeed?: number;
-  deletingSpeed?: number;
-  pauseTime?: number;
-}
+import { TypewriterTextProps } from '@/types';
 
 export const TypewriterText = ({
   text,

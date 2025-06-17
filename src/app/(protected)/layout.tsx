@@ -4,6 +4,7 @@ import { useAuth, AuthProvider } from '../../context/AuthContext';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef } from 'react';
 import toast from 'react-hot-toast';
+import { BottomNav } from '@/components';
 
 function Guard({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -13,8 +14,8 @@ function Guard({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (auth.status === 'unauthenticated' && !hasRedirected.current) {
       hasRedirected.current = true;
-      toast.error("You're not logged in."); //show toast
-      router.replace('/login'); //redirect
+      toast.error("You're not logged in.");
+      router.replace('/login');
     }
   }, [auth.status, router]);
 
@@ -33,7 +34,10 @@ function Guard({ children }: { children: React.ReactNode }) {
 export default function ProtectedLayout({ children }: { children: React.ReactNode }) {
   return (
     <AuthProvider>
-      <Guard>{children}</Guard>
+      <Guard>
+        <div className="min-h-screen pb-16">{children}</div>
+        <BottomNav />
+      </Guard>
     </AuthProvider>
   );
 }

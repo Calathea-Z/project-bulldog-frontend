@@ -6,9 +6,9 @@ import { usePathname } from 'next/navigation';
 import { AuthState, AuthContextValue } from '@/types';
 import { useRefreshToken } from '@/hooks';
 import { setAccessToken, getAccessToken, logoutUser } from '@/services';
-import { PUBLIC_ROUTES } from '@/constants/routes';
+import { PUBLIC_ROUTES } from '@/constants';
 import { LoadingScreen } from '@/components';
-import { isIOS } from '@/utils/device';
+import { isIOS } from '@/utils';
 
 /**
  * Authentication context for managing user authentication state

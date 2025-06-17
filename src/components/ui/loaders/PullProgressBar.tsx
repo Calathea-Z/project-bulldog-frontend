@@ -1,8 +1,6 @@
-interface PullProgressBarProps {
-  percent: number;
-}
+import { PullProgressBarProps } from '@/types';
 
-export default function PullProgressBar({ percent }: PullProgressBarProps) {
+export function PullProgressBar({ percent }: PullProgressBarProps) {
   return (
     <div className="fixed top-0 left-0 z-50 w-full">
       <div className="h-1 bg-muted">

@@ -2,24 +2,18 @@
 
 import { Plus, FileText, Mic, Type, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useState } from 'react';
-import AiTaskModal from '../ui/AiTaskModal'; // 🆕 Unified modal
+import { useState, useRef } from 'react';
+import { AiTaskModal, NewManualTaskModal } from '@/components';
+import { TaskCreationFabProps } from '@/types';
 
-interface TaskCreationFabProps {
-  expanded: boolean;
-  setExpanded: (expanded: boolean) => void;
-  onVoiceCapture: () => void;
-  onAiCreate: () => void;
-}
-
-export default function TaskCreationFab({
-  expanded,
-  setExpanded,
-  onVoiceCapture,
-  onAiCreate,
-}: TaskCreationFabProps) {
+export function TaskCreationFab({ expanded, setExpanded, onVoiceCapture }: TaskCreationFabProps) {
   const [taskModalOpen, setTaskModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<'manual' | 'file'>('manual');
+  const [showManualForm, setShowManualForm] = useState(false);
+
+  const [newText, setNewText] = useState('');
+  const [newDueAt, setNewDueAt] = useState<Date | null>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
 
   const handleAction = (action: () => void) => {
     setExpanded(false);
@@ -33,6 +27,14 @@ export default function TaskCreationFab({
   };
 
   const toggleExpand = () => setExpanded(!expanded);
+
+  const handleAdd = async () => {
+    if (!newText.trim()) return;
+    console.log('Create new task:', { text: newText, dueAt: newDueAt }); // 🔁 Replace with your mutation
+    setNewText('');
+    setNewDueAt(null);
+    setShowManualForm(false);
+  };
 
   const actions = [
     {
@@ -53,10 +55,16 @@ export default function TaskCreationFab({
       onClick: onVoiceCapture,
       bg: 'bg-white text-gray-700',
     },
+    {
+      icon: <Type className="w-5 h-5" />,
+      label: 'Quick Add Task',
+      onClick: () => setShowManualForm(true),
+      bg: 'bg-white text-gray-700',
+    },
   ];
 
   return (
-    <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50">
+    <div className="fixed bottom-20 right-4 sm:bottom-24 sm:right-6 z-50">
       {/* Backdrop */}
       <AnimatePresence>
         {expanded && (
@@ -128,6 +136,19 @@ export default function TaskCreationFab({
 
       {/* Unified AI Modal */}
       <AiTaskModal open={taskModalOpen} onClose={() => setTaskModalOpen(false)} mode={modalMode} />
+
+      {/* Manual Task Form */}
+      {showManualForm && (
+        <NewManualTaskModal
+          inputRef={inputRef}
+          newText={newText}
+          setNewText={setNewText}
+          newDueAt={newDueAt}
+          setNewDueAt={setNewDueAt}
+          handleAdd={handleAdd}
+          onClose={() => setShowManualForm(false)}
+        />
+      )}
     </div>
   );
 }

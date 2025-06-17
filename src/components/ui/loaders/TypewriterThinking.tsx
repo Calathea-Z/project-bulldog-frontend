@@ -1,10 +1,10 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { messages } from '@/constants/aiThinkingMessages';
-import { TypewriterText } from './TypewriterText';
+import { messages } from '@/constants';
+import { TypewriterText } from '@/components';
 
-export default function TypewriterThinking() {
+export function TypewriterThinking() {
   const [messageIndex, setMessageIndex] = useState(0);
   const [cycleKey, setCycleKey] = useState(0);
 

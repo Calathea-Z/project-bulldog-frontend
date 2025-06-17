@@ -1,5 +1,5 @@
-import { api } from './apiService';
-import { Summary } from '@/types/api';
+import { api } from '@/services';
+import { Summary } from '@/types';
 
 export const summaryService = {
   create: (payload: {

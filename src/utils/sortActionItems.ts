@@ -1,6 +1,4 @@
-import { ActionItem } from '@/types';
-
-type SortOption = 'date' | 'status' | 'text';
+import { ActionItem, SortOption } from '@/types';
 
 export function sortActionItems(items: ActionItem[], sortBy: SortOption = 'date'): ActionItem[] {
   return [...items].sort((a, b) => {

@@ -1,21 +1,12 @@
 import { useState, useMemo } from 'react';
 import { Search, Filter, ChevronDown, ChevronUp } from 'lucide-react';
-import ActionItemList from './ActionItemList';
-import { ActionItem } from '@/types';
-import { sortActionItems } from '@/utils/sortActionItems';
+import { ActionItemList } from '@/components';
+import { FilterStatus, SortOption } from '@/types';
+import { sortActionItems } from '@/utils';
+import { EnhancedTaskListProps } from '@/types';
+import { motion } from 'framer-motion';
 
-interface EnhancedTaskListProps {
-  items: ActionItem[];
-  onToggle: (id: string) => void;
-  onDelete: (id: string) => void;
-  onUpdate: any; // Using any for now, we can type this properly later
-  isLoading: boolean;
-}
-
-type FilterStatus = 'all' | 'active' | 'completed';
-type SortOption = 'date' | 'status' | 'text';
-
-export default function EnhancedTaskList({
+export function EnhancedTaskList({
   items,
   onToggle,
   onDelete,
@@ -69,6 +60,7 @@ export default function EnhancedTaskList({
             type="text"
             placeholder="Search tasks..."
             value={searchQuery}
+            aria-label="Search tasks"
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-10 pr-4 py-2 rounded border border-accent bg-surface text-text focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary focus:ring-offset-0"
           />
@@ -85,14 +77,24 @@ export default function EnhancedTaskList({
 
       {/* Filter Options */}
       {isFilterOpen && (
-        <div className="p-4 rounded border border-accent bg-surface space-y-4">
+        <motion.div
+          initial={{ opacity: 0, height: 0 }}
+          animate={{ opacity: 1, height: 'auto' }}
+          exit={{ opacity: 0, height: 0 }}
+          transition={{ duration: 0.2 }}
+          className="p-4 rounded border border-accent bg-surface space-y-4"
+        >
           <div>
             <label className="block text-sm font-medium text-text mb-2">Status</label>
             <div className="flex gap-2">
               {(['all', 'active', 'completed'] as const).map((status) => (
                 <button
                   key={status}
-                  onClick={() => setStatusFilter(status)}
+                  onClick={() => {
+                    setStatusFilter(status);
+                    setIsFilterOpen(false);
+                  }}
+                  aria-pressed={statusFilter === status}
                   className={`px-3 py-1 rounded text-sm ${
                     statusFilter === status
                       ? 'bg-accent text-surface'
@@ -110,7 +112,11 @@ export default function EnhancedTaskList({
               {(['date', 'status', 'text'] as const).map((option) => (
                 <button
                   key={option}
-                  onClick={() => setSortBy(option)}
+                  onClick={() => {
+                    setSortBy(option);
+                    setIsFilterOpen(false);
+                  }}
+                  aria-pressed={sortBy === option}
                   className={`px-3 py-1 rounded text-sm ${
                     sortBy === option
                       ? 'bg-accent text-surface'
@@ -122,7 +128,7 @@ export default function EnhancedTaskList({
               ))}
             </div>
           </div>
-        </div>
+        </motion.div>
       )}
 
       {/* Task List */}

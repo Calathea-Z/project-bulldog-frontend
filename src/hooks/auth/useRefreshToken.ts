@@ -1,14 +1,7 @@
 import axios from 'axios';
 import { setAccessToken } from '@/services';
-import { isIOS } from '@/utils/device';
+import { isIOS } from '@/utils';
 
-/**
- * Saves approved action items and summary to the database.
- * Clears input and closes review modal on success.
- * Shows error toast on failure.
- *
- * @param approvedActionItems - Action items approved by the user
- */
 export const useRefreshToken = () => {
   return async (): Promise<string | null> => {
     const localRefreshToken = localStorage.getItem('refreshToken');
