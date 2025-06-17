@@ -8,15 +8,13 @@ import AiTaskModal from '../ui/AiTaskModal'; // 🆕 Unified modal
 interface TaskCreationFabProps {
   expanded: boolean;
   setExpanded: (expanded: boolean) => void;
-  onVoiceCapture: () => void;
-  onAiCreate: () => void;
+  onVoiceCapture: () => Promise<void>;
 }
 
 export default function TaskCreationFab({
   expanded,
   setExpanded,
   onVoiceCapture,
-  onAiCreate,
 }: TaskCreationFabProps) {
   const [taskModalOpen, setTaskModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<'manual' | 'file'>('manual');

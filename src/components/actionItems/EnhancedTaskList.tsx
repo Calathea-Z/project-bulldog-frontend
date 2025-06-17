@@ -1,19 +1,10 @@
 import { useState, useMemo } from 'react';
 import { Search, Filter, ChevronDown, ChevronUp } from 'lucide-react';
-import ActionItemList from './ActionItemList';
-import { ActionItem } from '@/types';
+import ActionItemList from '@/components/actionItems/ActionItemList';
+import { ActionItem, FilterStatus, SortOption } from '@/types';
 import { sortActionItems } from '@/utils/sortActionItems';
-
-interface EnhancedTaskListProps {
-  items: ActionItem[];
-  onToggle: (id: string) => void;
-  onDelete: (id: string) => void;
-  onUpdate: any; // Using any for now, we can type this properly later
-  isLoading: boolean;
-}
-
-type FilterStatus = 'all' | 'active' | 'completed';
-type SortOption = 'date' | 'status' | 'text';
+import { useUpdateActionItem } from '@/hooks/actionItems/useActionItemHooks';
+import { EnhancedTaskListProps } from '@/types/ui';
 
 export default function EnhancedTaskList({
   items,

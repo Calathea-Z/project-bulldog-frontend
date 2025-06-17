@@ -9,7 +9,7 @@ interface NewActionItemFormProps {
   setNewText: (text: string) => void;
   newDueAt: Date | null;
   setNewDueAt: (date: Date | null) => void;
-  handleAdd: () => void;
+  handleAdd: () => Promise<void>;
 }
 
 export default function NewActionItemForm({

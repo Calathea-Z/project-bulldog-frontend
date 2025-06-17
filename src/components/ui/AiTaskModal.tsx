@@ -6,21 +6,15 @@ import { toast } from 'react-hot-toast';
 import { useAiTaskGenerator } from '@/hooks/ai/useAiTaskGenerator';
 import TypewriterThinking from './TypewriterThinking';
 import { api } from '@/services/apiService';
-import type { AiSummaryWithTasksResponse } from '@/types/ai';
+import type { AiSummaryWithTasksResponse, MinimalActionItem, AiTaskModalMode } from '@/types';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 
 interface AiTaskModalProps {
   open: boolean;
   onClose: () => void;
-  mode: 'manual' | 'file';
+  mode: AiTaskModalMode;
 }
-
-type MinimalActionItem = {
-  text: string;
-  suggestedTime: string | null;
-  isDateOnly?: boolean;
-};
 
 export default function AiTaskModal({ open, onClose, mode }: AiTaskModalProps) {
   // —— manual‐input hook ——
@@ -32,6 +26,8 @@ export default function AiTaskModal({ open, onClose, mode }: AiTaskModalProps) {
     reviewSummary,
     handleAiCreate,
     handleConfirmSave,
+    setReviewSummary,
+    setReviewActionItems,
   } = useAiTaskGenerator();
 
   // —— shared UI state ——
@@ -160,8 +156,16 @@ export default function AiTaskModal({ open, onClose, mode }: AiTaskModalProps) {
         throw new Error('No summary in response');
       }
 
-      // populate local file state instead of re-calling AI
+      // Update both summary and action items
       setFileSummary(resp.data.summary);
+      setReviewSummary(resp.data.summary);
+      setReviewActionItems(
+        resp.data.actionItems.map((item) => ({
+          text: item.text,
+          suggestedTime: item.dueAt || item.suggestedTime || null,
+          isDateOnly: item.isDateOnly ?? false,
+        })),
+      );
       setShowReview(true);
     } catch (err) {
       console.error(err);

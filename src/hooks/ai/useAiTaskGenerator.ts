@@ -1,19 +1,16 @@
 import { useState } from 'react';
 import { useGenerateAi, useCreateSummary } from '@/hooks';
 import { toast } from 'react-hot-toast';
-import type { ActionItem as FullActionItem } from '@/types';
-
-type MinimalActionItem = Pick<FullActionItem, 'text'> & {
-  suggestedTime: string | null;
-  isDateOnly?: boolean;
-};
+import type { MinimalActionItem } from '@/types';
 
 interface AiTaskGeneratorReturn {
   aiInput: string;
   setAiInput: (input: string) => void;
   isAiLoading: boolean;
   reviewActionItems: MinimalActionItem[];
+  setReviewActionItems: (items: MinimalActionItem[]) => void;
   reviewSummary: string;
+  setReviewSummary: (summary: string) => void;
   showReview: boolean;
   setShowReview: (show: boolean) => void;
   handleAiCreate: () => Promise<void>;
@@ -106,7 +103,9 @@ export function useAiTaskGenerator(): AiTaskGeneratorReturn {
     setAiInput,
     isAiLoading,
     reviewActionItems,
+    setReviewActionItems,
     reviewSummary,
+    setReviewSummary,
     showReview,
     setShowReview,
     handleAiCreate,

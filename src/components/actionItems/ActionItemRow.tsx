@@ -8,17 +8,13 @@ import { ActionItem } from '@/types/api';
 import { formatDueDate } from '@/utils/formatDate';
 import TextareaAutosize from 'react-textarea-autosize';
 import { Check, Pencil, Trash2 } from 'lucide-react';
+import { useUpdateActionItem } from '@/hooks/actionItems/useActionItemHooks';
 
 interface ActionItemRowProps {
   item: ActionItem;
   handleToggle: (id: string) => void;
   handleDelete: (id: string) => void;
-  updateActionItem: {
-    mutate: (
-      args: { id: string; payload: Partial<ActionItem> },
-      options: { onSuccess: () => void; onError: () => void },
-    ) => void;
-  };
+  updateActionItem: ReturnType<typeof useUpdateActionItem>;
 }
 
 export default function ActionItemRow({
