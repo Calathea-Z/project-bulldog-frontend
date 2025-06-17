@@ -3,7 +3,8 @@ export * from './actionItems/useActionItemHooks';
 
 //Ai
 export * from './ai/useGenerateAi';
-export * from './ai/useAiTaskGenerator';
+export * from './ai/useAiGeneration';
+export * from './ai/useAiReview';
 
 //Auth
 export * from './auth/useRedirectIfAuthenticated';
