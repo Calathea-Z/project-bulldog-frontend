@@ -3,21 +3,14 @@
 import { useState, useEffect, useRef } from 'react';
 import { Upload, X } from 'lucide-react';
 import { toast } from 'react-hot-toast';
-import { useAiGeneration } from '@/hooks/ai/useAiGeneration';
-import { useAiReview } from '@/hooks/ai/useAiReview';
-import TypewriterThinking from './TypewriterThinking';
-import { api } from '@/services/apiService';
-import type { AiSummaryWithTasksResponse, MinimalActionItem, AiTaskModalMode } from '@/types';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
+import { useAiGeneration, useAiReview } from '@/hooks';
+import { TypewriterThinking } from '@/components';
+import { api } from '@/services';
+import type { AiSummaryWithTasksResponse, AiTaskModalMode, AiTaskModalProps } from '@/types';
 
-interface AiTaskModalProps {
-  open: boolean;
-  onClose: () => void;
-  mode: AiTaskModalMode;
-}
-
-export default function AiTaskModal({ open, onClose, mode }: AiTaskModalProps) {
+export function AiTaskModal({ open, onClose, mode }: AiTaskModalProps) {
   // —— AI generation hook ——
   const { aiInput, setAiInput, isAiLoading, generateTasks } = useAiGeneration();
 
@@ -73,7 +66,14 @@ export default function AiTaskModal({ open, onClose, mode }: AiTaskModalProps) {
     try {
       const { summary, actionItems } = await generateTasks();
       setReviewSummary(summary);
-      setEditableTasks(actionItems);
+      setEditableTasks(
+        actionItems.map((item) => ({
+          text: item.text,
+          suggestedTime: item.suggestedTime,
+          isDateOnly: item.isDateOnly,
+          dueAt: item.suggestedTime || new Date().toISOString(),
+        })),
+      );
       setShowReview(true);
     } catch (error) {
       // Error is already handled in generateTasks
@@ -105,6 +105,7 @@ export default function AiTaskModal({ open, onClose, mode }: AiTaskModalProps) {
         resp.data.actionItems.map((item) => ({
           text: item.text,
           suggestedTime: item.dueAt || item.suggestedTime || null,
+          dueAt: item.dueAt || null,
           isDateOnly: item.isDateOnly ?? false,
         })),
       );

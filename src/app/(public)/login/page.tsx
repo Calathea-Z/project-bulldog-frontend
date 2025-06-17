@@ -8,7 +8,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import icon512 from '../../../../public/icon-512.png';
 import { handlePostLogin } from '@/services';
-import { LoadingScreen, ThemeToggle } from '@/components/ui';
+import { LoadingScreen, ThemeToggle } from '@/components';
 import { useRedirectIfAuthenticated } from '@/hooks';
 
 export default function LoginPage() {

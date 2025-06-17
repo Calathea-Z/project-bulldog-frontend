@@ -1,3 +1,10 @@
+export interface MinimalActionItem {
+  text: string;
+  suggestedTime: string | null;
+  dueAt: string | null;
+  isDateOnly: boolean;
+}
+
 export interface ActionItem {
   id: string;
   summaryId: string;

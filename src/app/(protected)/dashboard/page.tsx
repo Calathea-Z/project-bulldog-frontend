@@ -2,19 +2,23 @@
 
 import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
-import { EnhancedTaskList, AiSuggestions, TaskCreationFab } from '@/components';
-import { LogoutButton } from '@/components/ui/LogoutButton';
-import { PrivacyNotice } from '@/components/ui/PrivacyNotice';
-import AiTaskModal from '@/components/ui/AiTaskModal';
+import {
+  EnhancedTaskList,
+  AiSuggestions,
+  TaskCreationFab,
+  LogoutButton,
+  PrivacyNotice,
+  AiTaskModal,
+  PullIndicator,
+} from '@/components';
 import {
   useActionItems,
   useToggleActionItemDone,
   useDeleteActionItem,
   useUpdateActionItem,
+  usePullToRefresh,
 } from '@/hooks';
 import { AnimatePresence, motion } from 'framer-motion';
-import { usePullToRefresh } from '@/hooks/usePullToRefresh';
-import PullIndicator from '@/components/ui/PullIndicator';
 
 export default function DashboardPage() {
   const [showAiInput, setShowAiInput] = useState(false);

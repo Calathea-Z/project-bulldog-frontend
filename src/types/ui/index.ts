@@ -1,5 +1,6 @@
 import { ActionItem } from '@/types';
 import { UseMutationResult } from '@tanstack/react-query';
+import { RefObject } from 'react';
 
 // Modal Types
 export interface BaseModalProps {
@@ -38,7 +39,24 @@ export interface TaskCreationFabProps {
   onVoiceCapture: () => Promise<void>;
 }
 
+// Form Types
+export interface NewActionItemFormProps {
+  inputRef: RefObject<HTMLInputElement>;
+  newText: string;
+  setNewText: (text: string) => void;
+  newDueAt: Date | null;
+  setNewDueAt: (date: Date | null) => void;
+  handleAdd: () => Promise<void>;
+}
+
 // Task List Types
+export interface ActionItemListProps {
+  items: ActionItem[];
+  onToggle: (id: string) => void;
+  onDelete: (id: string) => void;
+  onUpdate: UseMutationResult<void, unknown, { id: string; payload: Partial<ActionItem> }, unknown>;
+}
+
 export interface EnhancedTaskListProps {
   items: ActionItem[];
   onToggle: (id: string) => void;
@@ -46,3 +64,5 @@ export interface EnhancedTaskListProps {
   onUpdate: UseMutationResult<void, unknown, { id: string; payload: Partial<ActionItem> }, unknown>;
   isLoading: boolean;
 }
+
+// AI Types

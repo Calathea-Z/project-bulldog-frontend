@@ -4,11 +4,12 @@ import React, { useState } from 'react';
 import { toast } from 'react-hot-toast';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
-import { ActionItem } from '@/types/api';
-import { formatDueDate } from '@/utils/formatDate';
-import TextareaAutosize from 'react-textarea-autosize';
 import { Check, Pencil, Trash2 } from 'lucide-react';
-import { useUpdateActionItem } from '@/hooks/actionItems/useActionItemHooks';
+import TextareaAutosize from 'react-textarea-autosize';
+
+import { ActionItem } from '@/types';
+import { formatDueDate } from '@/utils';
+import { useUpdateActionItem } from '@/hooks';
 
 interface ActionItemRowProps {
   item: ActionItem;
@@ -17,7 +18,7 @@ interface ActionItemRowProps {
   updateActionItem: ReturnType<typeof useUpdateActionItem>;
 }
 
-export default function ActionItemRow({
+export function ActionItemRow({
   item,
   handleToggle,
   handleDelete,

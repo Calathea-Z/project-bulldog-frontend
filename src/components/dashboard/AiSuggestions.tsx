@@ -3,13 +3,9 @@
 import { useEffect, useState } from 'react';
 import { Brain, Clock, X } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
+import { AiSuggestionsProps } from '@/types';
 
-interface AiSuggestionsProps {
-  lastSummary?: string;
-  timeSensitiveTasks?: number;
-}
-
-export default function AiSuggestions({ lastSummary, timeSensitiveTasks = 0 }: AiSuggestionsProps) {
+export function AiSuggestions({ lastSummary, timeSensitiveTasks = 0 }: AiSuggestionsProps) {
   const [showSummary, setShowSummary] = useState(!!lastSummary);
   const [showTimeTasks, setShowTimeTasks] = useState(timeSensitiveTasks > 0);
 

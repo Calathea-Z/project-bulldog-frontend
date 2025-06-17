@@ -2,8 +2,8 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { logoutUser } from '@/services';
 import toast from 'react-hot-toast';
+import { logoutUser } from '@/services';
 import { LogoutButtonProps } from '@/types';
 
 export const LogoutButton = ({ className = '', label = 'Logout' }: LogoutButtonProps) => {

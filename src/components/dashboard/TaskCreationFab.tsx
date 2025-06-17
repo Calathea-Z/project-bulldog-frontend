@@ -3,19 +3,10 @@
 import { Plus, FileText, Mic, Type, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useState } from 'react';
-import AiTaskModal from '../ui/AiTaskModal'; // 🆕 Unified modal
+import { AiTaskModal } from '@/components';
+import { TaskCreationFabProps } from '@/types';
 
-interface TaskCreationFabProps {
-  expanded: boolean;
-  setExpanded: (expanded: boolean) => void;
-  onVoiceCapture: () => Promise<void>;
-}
-
-export default function TaskCreationFab({
-  expanded,
-  setExpanded,
-  onVoiceCapture,
-}: TaskCreationFabProps) {
+export function TaskCreationFab({ expanded, setExpanded, onVoiceCapture }: TaskCreationFabProps) {
   const [taskModalOpen, setTaskModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<'manual' | 'file'>('manual');
 

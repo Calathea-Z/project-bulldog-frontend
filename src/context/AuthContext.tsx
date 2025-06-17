@@ -8,7 +8,7 @@ import { useRefreshToken } from '@/hooks';
 import { setAccessToken, getAccessToken, logoutUser } from '@/services';
 import { PUBLIC_ROUTES } from '@/constants/routes';
 import { LoadingScreen } from '@/components';
-import { isIOS } from '@/utils/device';
+import { isIOS } from '@/utils';
 
 /**
  * Authentication context for managing user authentication state

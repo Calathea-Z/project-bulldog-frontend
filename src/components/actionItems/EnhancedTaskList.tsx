@@ -1,12 +1,11 @@
 import { useState, useMemo } from 'react';
 import { Search, Filter, ChevronDown, ChevronUp } from 'lucide-react';
-import ActionItemList from '@/components/actionItems/ActionItemList';
-import { ActionItem, FilterStatus, SortOption } from '@/types';
-import { sortActionItems } from '@/utils/sortActionItems';
-import { useUpdateActionItem } from '@/hooks/actionItems/useActionItemHooks';
-import { EnhancedTaskListProps } from '@/types/ui';
+import { ActionItemList } from '@/components';
+import { FilterStatus, SortOption } from '@/types';
+import { sortActionItems } from '@/utils';
+import { EnhancedTaskListProps } from '@/types';
 
-export default function EnhancedTaskList({
+export function EnhancedTaskList({
   items,
   onToggle,
   onDelete,

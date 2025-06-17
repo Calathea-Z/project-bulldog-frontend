@@ -1,18 +1,9 @@
 'use client';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
-import { RefObject } from 'react';
+import { NewActionItemFormProps } from '@/types';
 
-interface NewActionItemFormProps {
-  inputRef: RefObject<HTMLInputElement>;
-  newText: string;
-  setNewText: (text: string) => void;
-  newDueAt: Date | null;
-  setNewDueAt: (date: Date | null) => void;
-  handleAdd: () => Promise<void>;
-}
-
-export default function NewActionItemForm({
+export function NewActionItemForm({
   inputRef,
   newText,
   setNewText,

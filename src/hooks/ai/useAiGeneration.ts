@@ -1,17 +1,7 @@
 import { useState } from 'react';
-import { useGenerateAi } from './useGenerateAi';
 import { toast } from 'react-hot-toast';
-import type { MinimalActionItem } from '@/types';
-
-interface UseAiGenerationReturn {
-  aiInput: string;
-  setAiInput: (input: string) => void;
-  isAiLoading: boolean;
-  generateTasks: () => Promise<{
-    summary: string;
-    actionItems: MinimalActionItem[];
-  }>;
-}
+import { useGenerateAi } from '@/hooks';
+import { UseAiGenerationReturn } from '@/types';
 
 export function useAiGeneration(): UseAiGenerationReturn {
   const generateAi = useGenerateAi();
@@ -37,6 +27,7 @@ export function useAiGeneration(): UseAiGenerationReturn {
         actionItems: response.actionItems.map((item) => ({
           text: item.text,
           suggestedTime: item.dueAt || item.suggestedTime || null,
+          dueAt: item.dueAt || null,
           isDateOnly: item.isDateOnly ?? false,
         })),
       };

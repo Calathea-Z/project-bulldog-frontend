@@ -1,15 +1,9 @@
 import { ActionItem } from '@/types';
-import ActionItemRow from './ActionItemRow';
+import { ActionItemRow } from '@/components';
 import { useUpdateActionItem } from '@/hooks';
+import { ActionItemListProps } from '@/types/ui';
 
-interface Props {
-  items: ActionItem[];
-  onToggle: (id: string) => void;
-  onDelete: (id: string) => void;
-  onUpdate: ReturnType<typeof useUpdateActionItem>;
-}
-
-export default function ActionItemList({ items, onToggle, onDelete, onUpdate }: Props) {
+export function ActionItemList({ items, onToggle, onDelete, onUpdate }: ActionItemListProps) {
   return (
     <ul className="space-y-2 mt-4" role="list" aria-label="Action items list">
       {items.map((item) => (

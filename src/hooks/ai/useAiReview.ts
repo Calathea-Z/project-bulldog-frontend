@@ -1,21 +1,7 @@
 import { useState } from 'react';
-import { useCreateSummary } from '@/hooks';
 import { toast } from 'react-hot-toast';
-import type { MinimalActionItem } from '@/types';
-
-interface UseAiReviewReturn {
-  editableTasks: MinimalActionItem[];
-  setEditableTasks: (tasks: MinimalActionItem[]) => void;
-  reviewSummary: string;
-  setReviewSummary: (summary: string) => void;
-  showReview: boolean;
-  setShowReview: (show: boolean) => void;
-  handleTaskEdit: (index: number, newText: string) => void;
-  handleTaskDelete: (index: number) => void;
-  handleTaskTimeEdit: (index: number, date: Date | null) => void;
-  handleTaskDateOnlyToggle: (index: number, value: boolean) => void;
-  handleConfirmSave: (originalText: string) => Promise<void>;
-}
+import { useCreateSummary } from '@/hooks';
+import { MinimalActionItem, UseAiReviewReturn } from '@/types';
 
 export function useAiReview(): UseAiReviewReturn {
   const createSummary = useCreateSummary();

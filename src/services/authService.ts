@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { getAccessToken, setAccessToken } from '@/services';
-import { isIOS } from '@/utils/device';
+import { isIOS } from '@/utils';
 
 /**
  * Handles post-login operations including token storage and session management.

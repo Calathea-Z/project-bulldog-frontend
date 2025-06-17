@@ -1,11 +1,7 @@
 import { Loader2 } from 'lucide-react';
+import { PullIndicatorProps } from '@/types';
 
-interface Props {
-  isRefreshing: boolean;
-  percent: number;
-}
-
-export default function PullIndicator({ isRefreshing, percent }: Props) {
+export function PullIndicator({ isRefreshing, percent }: PullIndicatorProps) {
   return (
     <div className="flex justify-center items-center py-2 text-sm text-muted-foreground">
       {isRefreshing ? (
