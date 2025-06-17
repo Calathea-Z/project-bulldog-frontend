@@ -7,7 +7,7 @@ import toast from 'react-hot-toast';
 import Image from 'next/image';
 import Link from 'next/link';
 import icon512 from '../../../../public/icon-512.png';
-import { handlePostLogin } from '@/services';
+import { login, handlePostLogin } from '@/services';
 import { LoadingScreen, ThemeToggle } from '@/components';
 import { useRedirectIfAuthenticated } from '@/hooks';
 
@@ -19,29 +19,14 @@ export default function LoginPage() {
 
   useRedirectIfAuthenticated();
 
-  const resetForm = () => {
-    setEmail('');
-    setError('');
-  };
-
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
     setIsLoading(true);
     setError('');
 
     try {
-      const res = await axios.post(
-        `${process.env.NEXT_PUBLIC_API_URL}/auth/login`,
-        { email },
-        {
-          withCredentials: true,
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        },
-      );
-
-      handlePostLogin(res.data);
+      const data = await login(email);
+      handlePostLogin(data);
       toast.success('Login successful!');
       router.push('/dashboard');
     } catch (err) {

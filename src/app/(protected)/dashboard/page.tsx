@@ -38,9 +38,18 @@ export default function DashboardPage() {
   const { isPulling, isRefreshing, pullPercent, offsetY } = usePullToRefresh(handleRefresh);
 
   useEffect(() => {
-    const onFocus = () => refetch();
+    const timeoutRef = { current: null as NodeJS.Timeout | null };
+
+    const onFocus = () => {
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+      timeoutRef.current = setTimeout(() => refetch(), 100);
+    };
+
     window.addEventListener('focus', onFocus);
-    return () => window.removeEventListener('focus', onFocus);
+    return () => {
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+      window.removeEventListener('focus', onFocus);
+    };
   }, [refetch]);
 
   const closeFab = () => setFabExpanded(false);
@@ -57,6 +66,7 @@ export default function DashboardPage() {
     return !item.isDone && dueDate <= today;
   }).length;
 
+  //TODO: Implement this, right now is just a placeholder
   const lastSummary =
     'Your tasks are well organized. Consider prioritizing the time-sensitive items.';
 

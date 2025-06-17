@@ -9,6 +9,7 @@ export type {
   UseAiGenerationReturn as AiGenerationReturn,
   UseAiReviewReturn as AiReviewReturn,
   AiSummaryWithTasksResponse,
+  AiChunkedSummaryRequest,
 } from './ai';
 
 // UI and common types

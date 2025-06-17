@@ -3,23 +3,27 @@ import { getAccessToken, setAccessToken } from '@/services';
 import { isIOS } from '@/utils';
 
 /**
+ * Sends a login request to the backend and returns auth tokens.
+ */
+export async function login(
+  email: string,
+): Promise<{ accessToken: string; refreshToken?: string }> {
+  const response = await axios.post(
+    `${process.env.NEXT_PUBLIC_API_URL}/auth/login`,
+    { email },
+    {
+      withCredentials: true,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    },
+  );
+
+  return response.data;
+}
+
+/**
  * Handles post-login operations including token storage and session management.
- *
- * @param {Object} data - The login response data
- * @param {string} data.accessToken - The JWT access token received from login
- * @param {string} [data.refreshToken] - Optional refresh token for iOS devices
- *
- * @description
- * This function:
- * - Stores the access token in the application state
- * - Sets a session flag indicating successful login
- * - For iOS devices, stores the refresh token in localStorage
- *
- * @example
- * ```tsx
- * const loginResponse = await loginAPI();
- * handlePostLogin(loginResponse);
- * ```
  */
 export function handlePostLogin(data: { accessToken: string; refreshToken?: string }) {
   const { accessToken, refreshToken } = data;
@@ -35,24 +39,6 @@ export function handlePostLogin(data: { accessToken: string; refreshToken?: stri
 
 /**
  * Handles user logout by clearing authentication state and redirecting to login page.
- *
- * @returns {Promise<void>}
- *
- * @description
- * This function:
- * - Makes a logout request to the server
- * - Clears the access token from application state
- * - Redirects the user to the login page
- * - Handles any errors during the logout process gracefully
- *
- * @example
- * ```tsx
- * // In a logout button handler
- * await logoutUser();
- * ```
- *
- * @throws {AxiosError} When the logout request fails, but the function will still
- * clear local state and redirect to login
  */
 export async function logoutUser(): Promise<void> {
   const accessToken = getAccessToken();

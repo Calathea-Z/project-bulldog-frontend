@@ -5,7 +5,7 @@ import { Upload, X } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
-import { useAiGeneration, useAiReview } from '@/hooks';
+import { useAiGeneration, useAiReview, useDisableBodyScroll } from '@/hooks';
 import { TypewriterThinking } from '@/components';
 import { api } from '@/services';
 import type { AiSummaryWithTasksResponse, AiTaskModalMode, AiTaskModalProps } from '@/types';
@@ -38,17 +38,7 @@ export function AiTaskModal({ open, onClose, mode }: AiTaskModalProps) {
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [fileSummary, setFileSummary] = useState<string>('');
 
-  // Prevent background scroll when modal is open
-  useEffect(() => {
-    if (open) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
-    }
-    return () => {
-      document.body.style.overflow = '';
-    };
-  }, [open]);
+  useDisableBodyScroll();
 
   // —— common helpers ——
   const handleCancel = () => {
@@ -152,7 +142,7 @@ export function AiTaskModal({ open, onClose, mode }: AiTaskModalProps) {
         {/* Header */}
         <div className="sticky top-0 z-10 bg-inherit p-4 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between">
           <span className="font-semibold text-lg text-zinc-900 dark:text-zinc-100">
-            {mode === 'manual' ? 'Create Tasks With AI' : 'Create Tasks With AI'}
+            Create Tasks With AI
           </span>
           <button
             onClick={handleCancel}
@@ -303,7 +293,7 @@ export function AiTaskModal({ open, onClose, mode }: AiTaskModalProps) {
 
         {/* Sticky Footer */}
         {showReview && (
-          <div className="sticky bottom-0 z-10 bg-inherit p-4 border-t border-zinc-200 dark:border-zinc-800 flex flex-col gap-2">
+          <div className="sticky bottom-0 z-10 bg-inherit p-4 border-t border-zinc-200 dark:border-zinc-800 flex flex-col gap-2 pb-20">
             <button
               onClick={handleViewSummary}
               className="text-blue-600 text-xs underline mb-2 self-start"

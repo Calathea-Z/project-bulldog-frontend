@@ -1,8 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { messages } from '@/constants/aiThinkingMessages';
-import { TypewriterText } from './TypewriterText';
+import { messages } from '@/constants';
+import { TypewriterText } from '@/components';
 
 export function TypewriterThinking() {
   const [messageIndex, setMessageIndex] = useState(0);
