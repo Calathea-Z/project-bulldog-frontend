@@ -30,6 +30,12 @@ export default function ActionItemRow({
   const [isEditing, setIsEditing] = useState(false);
   const [editText, setEditText] = useState(item.text);
   const [editDueAt, setEditDueAt] = useState<Date | null>(item.dueAt ? new Date(item.dueAt) : null);
+  const [isDateOnly, setIsDateOnly] = useState(item.isDateOnly ?? false);
+
+  // Update editDueAt when item.dueAt changes
+  React.useEffect(() => {
+    setEditDueAt(item.dueAt ? new Date(item.dueAt) : null);
+  }, [item.dueAt]);
 
   const handleSave = () => {
     if (!editText.trim()) {
@@ -42,6 +48,7 @@ export default function ActionItemRow({
         payload: {
           text: editText,
           dueAt: editDueAt ? editDueAt.toISOString() : null,
+          isDateOnly: isDateOnly,
         },
       },
       {
@@ -57,6 +64,7 @@ export default function ActionItemRow({
   const handleCancel = () => {
     setEditText(item.text);
     setEditDueAt(item.dueAt ? new Date(item.dueAt) : null);
+    setIsDateOnly(item.isDateOnly ?? false);
     setIsEditing(false);
   };
 
@@ -93,8 +101,8 @@ export default function ActionItemRow({
             <DatePicker
               selected={editDueAt}
               onChange={(date) => setEditDueAt(date)}
-              showTimeSelect
-              dateFormat="MMM d, yyyy h:mm aa"
+              showTimeSelect={!isDateOnly}
+              dateFormat={isDateOnly ? 'MMM d, yyyy' : 'MMM d, yyyy h:mm aa'}
               placeholderText="Set due date"
               minDate={new Date()}
               calendarClassName="react-datepicker"
@@ -110,7 +118,22 @@ export default function ActionItemRow({
               ]}
               className="w-full pl-9 pr-3 py-2 rounded-md border border-accent bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary"
               aria-label="Edit due date"
+              timeIntervals={15}
+              timeCaption="Time"
+              isClearable
             />
+            <div className="flex items-center gap-2 mt-1 ml-1">
+              <input
+                id={`all-day-${item.id}`}
+                type="checkbox"
+                checked={isDateOnly}
+                onChange={(e) => setIsDateOnly(e.target.checked)}
+                className="accent-primary"
+              />
+              <label htmlFor={`all-day-${item.id}`} className="text-sm text-muted">
+                All-day
+              </label>
+            </div>
           </div>
 
           {/* Buttons */}
@@ -150,7 +173,14 @@ export default function ActionItemRow({
           {/* Bottom Row: Due date + actions */}
           <div className="flex justify-between items-center text-xs text-muted ml-8">
             <div className="flex gap-2 items-center">
-              <span>📅 {item.dueAt ? formatDueDate(item.dueAt) : 'No due date'}</span>
+              <span>
+                📅{' '}
+                {item.dueAt
+                  ? item.isDateOnly
+                    ? formatDueDate(item.dueAt, { dateOnly: true })
+                    : formatDueDate(item.dueAt)
+                  : 'No due date'}
+              </span>
               {isOverdue && (
                 <span className="text-red-500 font-semibold flex items-center gap-1">
                   🔴 Overdue

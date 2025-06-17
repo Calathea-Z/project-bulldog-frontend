@@ -8,5 +8,12 @@ export interface AiChunkedSummaryRequest {
 
 export interface AiSummaryWithTasksResponse {
   summary: string;
-  actionItems: string[];
+  actionItems: ActionItemWithTime[];
+}
+
+export interface ActionItemWithTime {
+  text: string;
+  suggestedTime: string | null;
+  dueAt?: string | null;
+  isDateOnly?: boolean;
 }
