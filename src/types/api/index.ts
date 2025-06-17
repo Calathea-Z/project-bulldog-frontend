@@ -4,6 +4,7 @@ export interface ActionItem {
   text: string;
   isDone: boolean;
   dueAt: string | null;
+  isDateOnly: boolean;
 }
 
 export interface Summary {

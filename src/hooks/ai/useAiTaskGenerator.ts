@@ -3,7 +3,10 @@ import { useGenerateAi, useCreateSummary } from '@/hooks';
 import { toast } from 'react-hot-toast';
 import type { ActionItem as FullActionItem } from '@/types';
 
-type MinimalActionItem = Pick<FullActionItem, 'text'>;
+type MinimalActionItem = Pick<FullActionItem, 'text'> & {
+  suggestedTime: string | null;
+  isDateOnly?: boolean;
+};
 
 interface AiTaskGeneratorReturn {
   aiInput: string;
@@ -56,7 +59,13 @@ export function useAiTaskGenerator(): AiTaskGeneratorReturn {
         Model: undefined,
       });
       setReviewSummary(response.summary);
-      setReviewActionItems(response.actionItems.map((text: string) => ({ text })));
+      setReviewActionItems(
+        response.actionItems.map((item) => ({
+          text: item.text,
+          suggestedTime: item.dueAt || item.suggestedTime || null,
+          isDateOnly: item.isDateOnly ?? false,
+        })),
+      );
       setShowReview(true);
     } catch (error) {
       console.error('AI generation error:', error);
@@ -76,7 +85,11 @@ export function useAiTaskGenerator(): AiTaskGeneratorReturn {
       await createSummary.mutateAsync({
         originalText: aiInput,
         summaryText: reviewSummary,
-        actionItems: approvedActionItems.map((item) => ({ text: item.text, dueAt: null })),
+        actionItems: approvedActionItems.map((item) => ({
+          text: item.text,
+          dueAt: item.suggestedTime,
+          isDateOnly: item.isDateOnly ?? false,
+        })),
       });
       toast.success(
         `Added ${approvedActionItems.length} action item${approvedActionItems.length > 1 ? 's' : ''}`,
