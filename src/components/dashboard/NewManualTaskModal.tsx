@@ -19,7 +19,7 @@ export function NewManualTaskModal({
   inputRef: RefObject<HTMLTextAreaElement>;
   onClose: () => void;
 }) {
-  useDisableBodyScroll();
+  useDisableBodyScroll(true);
 
   const handleSave = async () => {
     await handleAdd();
