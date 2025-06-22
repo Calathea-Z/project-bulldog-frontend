@@ -27,13 +27,21 @@ export async function login(
  */
 export function handlePostLogin(data: { accessToken: string; refreshToken?: string }) {
   const { accessToken, refreshToken } = data;
+  const isIOSDevice = isIOS();
+
+  console.log('🔐 Post-login - iOS detected:', isIOSDevice);
+  console.log('🔐 Refresh token received:', !!refreshToken);
 
   setAccessToken(accessToken);
   sessionStorage.setItem('hasLoggedIn', 'true');
 
-  if (isIOS() && refreshToken) {
-    localStorage.setItem('refreshToken', refreshToken);
-    console.log('📱 iOS detected — refresh token stored in localStorage');
+  if (isIOSDevice && refreshToken) {
+    try {
+      localStorage.setItem('refreshToken', refreshToken);
+      console.log('📱 iOS detected — refresh token stored in localStorage');
+    } catch (error) {
+      console.error('❌ Failed to store refresh token in localStorage:', error);
+    }
   }
 }
 

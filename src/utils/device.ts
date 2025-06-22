@@ -13,5 +13,14 @@ export function isIOS(): boolean {
 
   const isIOS = isIOSDevice || isMacTouch;
 
+  console.log('📱 iOS Detection:', {
+    userAgent: ua,
+    platform,
+    maxTouchPoints,
+    isIOSDevice,
+    isMacTouch,
+    isIOS,
+  });
+
   return isIOS;
 }
