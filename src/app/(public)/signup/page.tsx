@@ -1,15 +1,15 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { api, setAccessToken } from '@/services';
+import { api } from '@/services';
 import toast from 'react-hot-toast';
 import Image from 'next/image';
 import Link from 'next/link';
 import icon512 from '../../../../public/icon-512.png';
-import { handlePostLogin } from '@/services';
 import { LoadingScreen, ThemeToggle } from '@/components';
 import { useRedirectIfAuthenticated } from '@/hooks';
+import { Eye, EyeOff } from 'lucide-react';
 
 export default function SignUpPage() {
   const router = useRouter();
@@ -17,21 +17,13 @@ export default function SignUpPage() {
   const [displayName, setDisplayName] = useState('');
   const [password, setPassword] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
-  const [otpCode, setOtpCode] = useState('');
-  const [verifyUserId, setVerifyUserId] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [resendCooldown, setResendCooldown] = useState(0);
-  const [attemptsLeft, setAttemptsLeft] = useState(5);
+  const [isEmailSent, setIsEmailSent] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
 
   useRedirectIfAuthenticated();
-
-  useEffect(() => {
-    if (resendCooldown > 0) {
-      const timer = setTimeout(() => setResendCooldown(resendCooldown - 1), 1000);
-      return () => clearTimeout(timer);
-    }
-  }, [resendCooldown]);
 
   async function handleSignUp(e: React.FormEvent) {
     e.preventDefault();
@@ -39,23 +31,33 @@ export default function SignUpPage() {
     setError('');
 
     try {
+      // Format phone number if provided
+      let formattedPhoneNumber = phoneNumber;
+      if (phoneNumber.trim()) {
+        // Remove any non-digit characters and add +1 prefix
+        const digitsOnly = phoneNumber.replace(/\D/g, '');
+        if (digitsOnly.length === 10) {
+          formattedPhoneNumber = `+1${digitsOnly}`;
+        } else {
+          toast.error('Please enter a valid 10-digit US phone number');
+          setIsLoading(false);
+          return;
+        }
+      }
+
       const result = await api
         .post('/auth/register', {
           email,
           displayName,
           password,
-          phoneNumber,
+          phoneNumber: formattedPhoneNumber,
         })
         .then((res) => res.data);
 
-      if (result.auth) {
-        setAccessToken(result.auth.accessToken);
-        handlePostLogin(result.auth);
+      if (result.emailVerificationRequired) {
+        setIsEmailSent(true);
+        setSuccessMessage(result.message);
         toast.success('Account created!');
-        router.push('/dashboard');
-      } else if (result.phoneVerificationRequired && result.userId) {
-        setVerifyUserId(result.userId);
-        toast.success('Verification code sent to your phone.');
       } else {
         throw new Error('Unexpected registration response');
       }
@@ -71,57 +73,12 @@ export default function SignUpPage() {
     }
   }
 
-  async function handleVerifyPhone(e: React.FormEvent) {
-    e.preventDefault();
-    setIsLoading(true);
-    setError('');
-
-    try {
-      const result = await api
-        .post('/auth/verify-phone', {
-          userId: verifyUserId,
-          code: otpCode,
-        })
-        .then((res) => res.data);
-
-      if (result.auth) {
-        setAccessToken(result.auth.accessToken);
-        handlePostLogin(result.auth);
-        toast.success('Phone verified!');
-        router.push('/dashboard');
-      } else {
-        throw new Error('Unexpected verification response');
-      }
-    } catch (err: any) {
-      console.error(err);
-      toast.error('Verification failed.');
-      setAttemptsLeft((prev) => prev - 1);
-      setError('Invalid or expired verification code.');
-    } finally {
-      setIsLoading(false);
-    }
-  }
-
-  async function handleResendCode() {
-    if (!verifyUserId) return;
-    setIsLoading(true);
-    try {
-      await api.post(`/two-factor-debug/send-code/${verifyUserId}`);
-      toast.success('Verification code resent.');
-      setResendCooldown(30);
-    } catch {
-      toast.error('Failed to resend code.');
-    } finally {
-      setIsLoading(false);
-    }
-  }
-
   return (
     <main className="min-h-screen bg-background text-text flex items-center justify-center p-4 relative">
       {isLoading && <LoadingScreen />}
 
       <form
-        onSubmit={verifyUserId ? handleVerifyPhone : handleSignUp}
+        onSubmit={handleSignUp}
         className="w-full max-w-sm bg-surface shadow-xl rounded-xl p-6 space-y-4 border border-primary"
         aria-busy={isLoading}
       >
@@ -130,15 +87,13 @@ export default function SignUpPage() {
         </div>
 
         <h1 className="text-2xl font-bold text-center text-primary">
-          {verifyUserId ? 'Verify Your Phone' : 'Create an Account'}
+          {isEmailSent ? 'Check Your Email' : 'Create an Account'}
         </h1>
         <p className="text-sm text-secondary text-center">
-          {verifyUserId
-            ? 'Enter the 6-digit code sent to your phone.'
-            : 'Sign up to get started with Bulldog.'}
+          {isEmailSent ? successMessage : 'Sign up to get started with Bulldog.'}
         </p>
 
-        {!verifyUserId && (
+        {!isEmailSent ? (
           <>
             <div className="space-y-1">
               <label htmlFor="displayName" className="sr-only">
@@ -172,85 +127,89 @@ export default function SignUpPage() {
               />
             </div>
 
-            <div className="space-y-1">
+            <div className="relative space-y-1">
               <label htmlFor="password" className="sr-only">
                 Password
               </label>
               <input
                 id="password"
-                type="password"
+                type={showPassword ? 'text' : 'password'}
                 required
-                placeholder="••••••••"
+                placeholder="password"
                 className="w-full p-3 rounded bg-background border border-accent text-text placeholder:text-secondary focus:outline-none focus:ring-2 focus:ring-primary"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 disabled={isLoading}
               />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute inset-y-0 right-0 flex items-center px-3 text-secondary hover:text-primary"
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
+              >
+                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+              </button>
             </div>
 
             <div className="space-y-1">
               <label htmlFor="phoneNumber" className="sr-only">
-                Phone Number
+                Phone Number (Optional)
               </label>
               <input
                 id="phoneNumber"
                 type="tel"
-                required
-                placeholder="+15555555555"
+                placeholder="555-555-5555 (Optional)"
                 className="w-full p-3 rounded bg-background border border-accent text-text placeholder:text-secondary focus:outline-none focus:ring-2 focus:ring-primary"
                 value={phoneNumber}
                 onChange={(e) => setPhoneNumber(e.target.value)}
                 disabled={isLoading}
               />
             </div>
-          </>
-        )}
 
-        {verifyUserId && (
-          <div className="space-y-1">
-            <label htmlFor="otp" className="sr-only">
-              Verification Code
-            </label>
-            <input
-              id="otp"
-              type="text"
-              inputMode="numeric"
-              pattern="\d*"
-              maxLength={6}
-              required
-              placeholder="Enter 6-digit code"
-              className="w-full p-3 rounded bg-background border border-accent text-text placeholder:text-secondary focus:outline-none focus:ring-2 focus:ring-primary"
-              value={otpCode}
-              onChange={(e) => setOtpCode(e.target.value)}
-              disabled={isLoading || attemptsLeft <= 0}
-            />
-            <div className="text-xs text-secondary text-right">Attempts left: {attemptsLeft}</div>
             <button
-              type="button"
-              onClick={handleResendCode}
-              className="text-sm text-primary hover:text-accent disabled:opacity-50"
-              disabled={resendCooldown > 0 || isLoading}
+              type="submit"
+              className="w-full bg-accent text-surface py-2 rounded hover:bg-primary transition disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={isLoading}
             >
-              {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : 'Resend Code'}
+              {isLoading ? 'Creating account...' : 'Sign Up'}
             </button>
+          </>
+        ) : (
+          <div className="space-y-4">
+            <div className="bg-green-50/10 border border-green-200/20 rounded-lg p-4 text-center">
+              <p className="text-green-500 mb-2">✅ Account created successfully!</p>
+              <p className="text-secondary text-sm">
+                Please check your email and click the verification link to activate your account.
+              </p>
+            </div>
+
+            <div className="space-y-3">
+              <Link
+                href="/login"
+                className="w-full bg-accent text-surface py-2 rounded hover:bg-primary transition flex items-center justify-center"
+              >
+                Go to Sign In
+              </Link>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setIsEmailSent(false);
+                  setEmail('');
+                  setDisplayName('');
+                  setPassword('');
+                  setPhoneNumber('');
+                  setError('');
+                }}
+                className="w-full bg-background border border-accent text-text py-2 rounded hover:border-primary transition"
+              >
+                Create Another Account
+              </button>
+            </div>
           </div>
         )}
 
-        <button
-          type="submit"
-          className="w-full bg-accent text-surface py-2 rounded hover:bg-primary transition disabled:opacity-50 disabled:cursor-not-allowed"
-          disabled={isLoading || (!!verifyUserId && attemptsLeft <= 0)}
-        >
-          {isLoading
-            ? verifyUserId
-              ? 'Verifying...'
-              : 'Creating account...'
-            : verifyUserId
-              ? 'Verify Code'
-              : 'Sign Up'}
-        </button>
-
-        {!verifyUserId && (
+        {!isEmailSent && (
           <div className="text-center text-sm text-secondary">
             <p>
               Already have an account?{' '}

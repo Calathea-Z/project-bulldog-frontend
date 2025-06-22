@@ -103,8 +103,20 @@ api.interceptors.response.use(
   async (err) => {
     const originalRequest = err.config as RetryableRequest;
 
-    if (originalRequest.url?.includes('/auth/refresh')) {
-      window.location.href = '/login';
+    // Define routes that should not trigger a token refresh
+    const excludedRoutes = [
+      '/auth/login',
+      '/auth/register',
+      '/auth/refresh',
+      '/auth/resend-verification-email',
+    ];
+
+    if (
+      originalRequest.url &&
+      excludedRoutes.some((route) => originalRequest.url!.includes(route))
+    ) {
+      // For these specific routes, we don't want to retry or refresh the token.
+      // Just reject the promise with the original error.
       return Promise.reject(err);
     }
 
