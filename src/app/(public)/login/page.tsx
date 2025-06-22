@@ -16,13 +16,13 @@ export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [otpCode, setOtpCode] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
   const [twoFactorUserId, setTwoFactorUserId] = useState<string | null>(null);
   const [twoFactorData, setTwoFactorData] = useState<any>(null);
-  const [selectedMethod, setSelectedMethod] = useState<'sms' | 'email'>('sms');
   const [isCodeSent, setIsCodeSent] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+  const [selectedMethod, setSelectedMethod] = useState<'sms' | 'email'>('sms');
 
   useRedirectIfAuthenticated();
 
@@ -32,7 +32,13 @@ export default function LoginPage() {
     setError('');
 
     try {
-      const data = await api.post('/auth/login', { email, password }).then((res) => res.data);
+      // Create a temporary object for the request to avoid storing password in variables
+      const loginData = { email, password };
+
+      const data = await api.post('/auth/login', loginData).then((res) => res.data);
+
+      // Clear the password from memory immediately after use
+      setPassword('');
 
       if (data.auth) {
         handlePostLogin(data.auth);
@@ -49,7 +55,11 @@ export default function LoginPage() {
         throw new Error('Unexpected login response');
       }
     } catch (err: any) {
-      console.error(err);
+      // Clear the password from memory on error as well
+      setPassword('');
+
+      // Log error without exposing sensitive data
+      console.error('Login failed:', err?.response?.status || 'Unknown error');
       const isHTML = err?.response?.headers?.['content-type']?.includes('text/html');
       const fallback = 'Login failed. Please try again.';
       const msg = !isHTML && typeof err?.response?.data === 'string' ? err.response.data : fallback;
@@ -75,7 +85,8 @@ export default function LoginPage() {
       toast.success(`Verification code sent via ${selectedMethod === 'sms' ? 'SMS' : 'email'}!`);
       setIsCodeSent(true);
     } catch (err: any) {
-      console.error(err);
+      // Log error without exposing sensitive data
+      console.error('2FA request failed:', err?.response?.status || 'Unknown error');
       toast.error('Failed to send verification code. Please try again.');
       setError('Failed to send verification code.');
     } finally {
@@ -106,7 +117,8 @@ export default function LoginPage() {
         throw new Error('Unexpected 2FA response');
       }
     } catch (err: any) {
-      console.error(err);
+      // Log error without exposing sensitive data
+      console.error('2FA verification failed:', err?.response?.status || 'Unknown error');
       toast.error('Invalid or expired 2FA code.');
       setError('2FA verification failed.');
     } finally {

@@ -76,7 +76,8 @@ const tryRefreshAccessToken = async (): Promise<string | null> => {
 
     return res.data.accessToken;
   } catch (err) {
-    console.error('🔐 Refresh failed:', err);
+    // Log error without exposing sensitive data
+    console.error('🔐 Refresh failed:', err instanceof Error ? err.message : 'Unknown error');
     return null;
   }
 };
