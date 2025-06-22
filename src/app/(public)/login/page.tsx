@@ -16,6 +16,9 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [otpCode, setOtpCode] = useState('');
   const [twoFactorUserId, setTwoFactorUserId] = useState<string | null>(null);
+  const [twoFactorData, setTwoFactorData] = useState<any>(null);
+  const [selectedMethod, setSelectedMethod] = useState<'sms' | 'email'>('sms');
+  const [isCodeSent, setIsCodeSent] = useState(false);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
@@ -35,7 +38,11 @@ export default function LoginPage() {
         router.push('/dashboard');
       } else if (data.twoFactor) {
         setTwoFactorUserId(data.twoFactor.userId);
-        toast.success('2FA code sent — please enter it.');
+        setTwoFactorData(data.twoFactor);
+        setIsCodeSent(false);
+        // Default to SMS if available, otherwise email
+        setSelectedMethod(data.twoFactor.canUseSms ? 'sms' : 'email');
+        toast.success('Please choose how to receive your 2FA code.');
       } else {
         throw new Error('Unexpected login response');
       }
@@ -51,6 +58,29 @@ export default function LoginPage() {
     }
   }
 
+  async function handleRequestTwoFactor() {
+    if (!twoFactorUserId) return;
+
+    setIsLoading(true);
+    setError('');
+
+    try {
+      await api.post('/auth/request-2fa', {
+        userId: twoFactorUserId,
+        method: selectedMethod,
+      });
+
+      toast.success(`Verification code sent via ${selectedMethod === 'sms' ? 'SMS' : 'email'}!`);
+      setIsCodeSent(true);
+    } catch (err: any) {
+      console.error(err);
+      toast.error('Failed to send verification code. Please try again.');
+      setError('Failed to send verification code.');
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
   async function handleVerifyOtp(e: React.FormEvent) {
     e.preventDefault();
     setIsLoading(true);
@@ -61,6 +91,7 @@ export default function LoginPage() {
         .post('/auth/verify-2fa', {
           userId: twoFactorUserId,
           code: otpCode,
+          verificationMethod: selectedMethod,
         })
         .then((res) => res.data);
 
@@ -81,12 +112,15 @@ export default function LoginPage() {
     }
   }
 
+  const showMethodSelection = twoFactorUserId && !isCodeSent;
+  const showOtpInput = twoFactorUserId && isCodeSent;
+
   return (
     <main className="min-h-screen bg-background text-text flex items-center justify-center p-4 relative">
       {isLoading && <LoadingScreen />}
 
       <form
-        onSubmit={twoFactorUserId ? handleVerifyOtp : handleLogin}
+        onSubmit={showOtpInput ? handleVerifyOtp : handleLogin}
         className="w-full max-w-sm bg-surface shadow-xl rounded-xl p-6 space-y-4 border border-primary"
         aria-busy={isLoading}
       >
@@ -96,9 +130,11 @@ export default function LoginPage() {
 
         <h1 className="text-2xl font-bold text-center text-primary">Welcome Back</h1>
         <p className="text-sm text-secondary text-center">
-          {twoFactorUserId
-            ? 'Enter your 2FA code below'
-            : 'Sign in with your email and password to continue.'}
+          {showMethodSelection
+            ? 'Choose how to receive your verification code'
+            : showOtpInput
+              ? 'Enter your verification code'
+              : 'Sign in with your email and password to continue.'}
         </p>
 
         {!twoFactorUserId && (
@@ -137,10 +173,65 @@ export default function LoginPage() {
           </>
         )}
 
-        {twoFactorUserId && (
+        {showMethodSelection && twoFactorData && (
+          <div className="space-y-4">
+            <div className="text-sm text-secondary">
+              <p>We'll send a verification code to:</p>
+            </div>
+
+            {twoFactorData.canUseSms && (
+              <button
+                type="button"
+                onClick={() => setSelectedMethod('sms')}
+                className={`w-full p-3 rounded border transition ${
+                  selectedMethod === 'sms'
+                    ? 'bg-primary border-primary text-surface'
+                    : 'bg-background border-accent text-text hover:border-primary'
+                }`}
+                disabled={isLoading}
+              >
+                <div className="text-left">
+                  <div className="font-medium">📱 SMS</div>
+                  <div className="text-sm opacity-80">{twoFactorData.phoneNumber}</div>
+                </div>
+              </button>
+            )}
+
+            {twoFactorData.canUseEmail && (
+              <button
+                type="button"
+                onClick={() => setSelectedMethod('email')}
+                className={`w-full p-3 rounded border transition ${
+                  selectedMethod === 'email'
+                    ? 'bg-primary border-primary text-surface'
+                    : 'bg-background border-accent text-text hover:border-primary'
+                }`}
+                disabled={isLoading}
+              >
+                <div className="text-left">
+                  <div className="font-medium">📧 Email</div>
+                  <div className="text-sm opacity-80">{twoFactorData.email}</div>
+                </div>
+              </button>
+            )}
+
+            <button
+              type="button"
+              onClick={handleRequestTwoFactor}
+              className="w-full bg-accent text-surface py-2 rounded hover:bg-primary transition disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={isLoading}
+            >
+              {isLoading
+                ? 'Sending...'
+                : `Send Code via ${selectedMethod === 'sms' ? 'SMS' : 'Email'}`}
+            </button>
+          </div>
+        )}
+
+        {showOtpInput && (
           <div className="space-y-1">
             <label htmlFor="otp" className="sr-only">
-              2FA Code
+              Verification Code
             </label>
             <input
               id="otp"
@@ -158,13 +249,25 @@ export default function LoginPage() {
           </div>
         )}
 
-        <button
-          type="submit"
-          className="w-full bg-accent text-surface py-2 rounded hover:bg-primary transition disabled:opacity-50 disabled:cursor-not-allowed"
-          disabled={isLoading}
-        >
-          {isLoading ? 'Signing in...' : twoFactorUserId ? 'Verify Code' : 'Sign In'}
-        </button>
+        {!twoFactorUserId && (
+          <button
+            type="submit"
+            className="w-full bg-accent text-surface py-2 rounded hover:bg-primary transition disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={isLoading}
+          >
+            {isLoading ? 'Signing in...' : 'Sign In'}
+          </button>
+        )}
+
+        {showOtpInput && (
+          <button
+            type="submit"
+            className="w-full bg-accent text-surface py-2 rounded hover:bg-primary transition disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={isLoading}
+          >
+            {isLoading ? 'Verifying...' : 'Verify Code'}
+          </button>
+        )}
 
         {!twoFactorUserId && (
           <div className="text-center text-sm text-secondary">
