@@ -18,6 +18,7 @@ export default function LoginPage() {
   const [otpCode, setOtpCode] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isResending, setIsResending] = useState(false);
   const [error, setError] = useState('');
   const [twoFactorUserId, setTwoFactorUserId] = useState<string | null>(null);
   const [twoFactorData, setTwoFactorData] = useState<any>(null);
@@ -27,17 +28,16 @@ export default function LoginPage() {
   useRedirectIfAuthenticated();
 
   async function handleLogin(e: React.FormEvent) {
-    e.preventDefault();
-    setIsLoading(true);
-    setError('');
-
     try {
-      // Create a temporary object for the request to avoid storing password in variables
+      e.preventDefault();
+
+      setIsLoading(true);
+      setError('');
+
       const loginData = { email, password };
 
       const data = await api.post('/auth/login', loginData).then((res) => res.data);
 
-      // Clear the password from memory immediately after use
       setPassword('');
 
       if (data.auth) {
@@ -48,23 +48,28 @@ export default function LoginPage() {
         setTwoFactorUserId(data.twoFactor.userId);
         setTwoFactorData(data.twoFactor);
         setIsCodeSent(false);
-        // Default to SMS if available, otherwise email
         setSelectedMethod(data.twoFactor.canUseSms ? 'sms' : 'email');
         toast.success('Please choose how to receive your 2FA code.');
       } else {
         throw new Error('Unexpected login response');
       }
     } catch (err: any) {
-      // Clear the password from memory on error as well
       setPassword('');
 
-      // Log error without exposing sensitive data
-      console.error('Login failed:', err?.response?.status || 'Unknown error');
-      const isHTML = err?.response?.headers?.['content-type']?.includes('text/html');
-      const fallback = 'Login failed. Please try again.';
-      const msg = !isHTML && typeof err?.response?.data === 'string' ? err.response.data : fallback;
-      toast.error(msg);
-      setError(msg);
+      const errorMessage = err?.response?.data;
+      let userFriendlyMessage = 'Login failed. Please try again.';
+      if (typeof errorMessage === 'string') {
+        if (errorMessage.includes('verify your email address')) {
+          userFriendlyMessage =
+            'Please verify your email address before signing in. Check your inbox for a verification code.';
+        } else if (errorMessage.includes('Invalid credentials')) {
+          userFriendlyMessage = 'Invalid email or password. Please try again.';
+        } else {
+          userFriendlyMessage = errorMessage;
+        }
+      }
+
+      setError(userFriendlyMessage);
     } finally {
       setIsLoading(false);
     }
@@ -123,6 +128,25 @@ export default function LoginPage() {
       setError('2FA verification failed.');
     } finally {
       setIsLoading(false);
+    }
+  }
+
+  async function handleResendVerificationEmail(e: React.MouseEvent<HTMLButtonElement>) {
+    e.preventDefault();
+    if (!email) {
+      toast.error('Please enter your email address first.');
+      return;
+    }
+    setIsResending(true);
+    try {
+      const response = await api.post('/auth/resend-verification-email', { email });
+      toast.success(response.data.message);
+      setError('');
+    } catch (err: any) {
+      const msg = err?.response?.data?.message || 'Failed to resend email. Please try again.';
+      toast.error(msg);
+    } finally {
+      setIsResending(false);
     }
   }
 
@@ -312,18 +336,39 @@ export default function LoginPage() {
                 {error}
               </p>
               <div className="text-secondary space-y-2">
-                <p>Need help signing in?</p>
-                <div className="flex flex-col gap-2">
-                  <Link href="/signup" className="text-primary hover:text-accent transition-colors">
-                    Create a new account
-                  </Link>
-                  <Link
-                    href="/reset-password"
-                    className="text-primary hover:text-accent transition-colors"
-                  >
-                    Forgot your password?
-                  </Link>
-                </div>
+                {error.includes('verify your email address') ? (
+                  <>
+                    <p>Need help with email verification?</p>
+                    <div className="flex flex-col gap-2">
+                      <button
+                        type="button"
+                        onClick={handleResendVerificationEmail}
+                        className="text-primary hover:text-accent transition-colors disabled:opacity-50"
+                        disabled={isResending}
+                      >
+                        {isResending ? 'Sending...' : 'Resend verification email'}
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <p>Need help signing in?</p>
+                    <div className="flex flex-col gap-2">
+                      <Link
+                        href="/signup"
+                        className="text-primary hover:text-accent transition-colors"
+                      >
+                        Create a new account
+                      </Link>
+                      <Link
+                        href="/reset-password"
+                        className="text-primary hover:text-accent transition-colors"
+                      >
+                        Forgot your password?
+                      </Link>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           </div>

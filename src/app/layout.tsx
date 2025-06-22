@@ -1,7 +1,7 @@
 'use client';
 
 import './styles/globals.css';
-import { ThemeProvider } from 'next-themes';
+import { Providers } from './providers/Providers';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useState } from 'react';
 import { DM_Sans } from 'next/font/google';
@@ -19,14 +19,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en" className="dark" suppressHydrationWarning>
       <body className={`${dmSans.variable} font-sans`}>
         <QueryClientProvider client={queryClient}>
-          <ThemeProvider
-            attribute="class"
-            defaultTheme="dark"
-            enableSystem={false}
-            storageKey="theme"
-          >
-            {children}
-          </ThemeProvider>
+          <Providers>{children}</Providers>
         </QueryClientProvider>
       </body>
     </html>
