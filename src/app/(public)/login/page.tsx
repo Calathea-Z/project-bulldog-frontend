@@ -9,6 +9,7 @@ import icon512 from '../../../../public/icon-512.png';
 import { api, handlePostLogin, setAccessToken } from '@/services';
 import { LoadingScreen, ThemeToggle } from '@/components';
 import { useRedirectIfAuthenticated } from '@/hooks';
+import { Eye, EyeOff } from 'lucide-react';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -19,6 +20,7 @@ export default function LoginPage() {
   const [twoFactorData, setTwoFactorData] = useState<any>(null);
   const [selectedMethod, setSelectedMethod] = useState<'sms' | 'email'>('sms');
   const [isCodeSent, setIsCodeSent] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
@@ -155,20 +157,28 @@ export default function LoginPage() {
               />
             </div>
 
-            <div className="space-y-1">
+            <div className="relative space-y-1">
               <label htmlFor="password" className="sr-only">
                 Password
               </label>
               <input
                 id="password"
-                type="password"
+                type={showPassword ? 'text' : 'password'}
                 required
-                placeholder="••••••••"
+                placeholder="Password"
                 className="w-full p-3 rounded bg-background border border-accent text-text placeholder:text-secondary focus:outline-none focus:ring-2 focus:ring-primary"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 disabled={isLoading}
               />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute inset-y-0 right-0 flex items-center px-3 text-secondary hover:text-primary"
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
+              >
+                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+              </button>
             </div>
           </>
         )}
