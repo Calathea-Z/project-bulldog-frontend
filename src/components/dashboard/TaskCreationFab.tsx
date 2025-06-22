@@ -30,7 +30,7 @@ export function TaskCreationFab({ expanded, setExpanded, onVoiceCapture }: TaskC
 
   const handleAdd = async () => {
     if (!newText.trim()) return;
-    console.log('Create new task:', { text: newText, dueAt: newDueAt }); // 🔁 Replace with your mutation
+    // TODO: Replace with actual mutation
     setNewText('');
     setNewDueAt(null);
     setShowManualForm(false);
