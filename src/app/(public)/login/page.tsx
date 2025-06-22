@@ -186,7 +186,7 @@ export default function LoginPage() {
         {showMethodSelection && twoFactorData && (
           <div className="space-y-4">
             <div className="text-sm text-secondary">
-              <p>We'll send a verification code to:</p>
+              <p>We&apos;ll send a verification code to:</p>
             </div>
 
             {twoFactorData.canUseSms && (
