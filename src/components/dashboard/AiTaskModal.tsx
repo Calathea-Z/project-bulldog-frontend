@@ -38,7 +38,7 @@ export function AiTaskModal({ open, onClose, mode }: AiTaskModalProps) {
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [fileSummary, setFileSummary] = useState<string>('');
 
-  useDisableBodyScroll();
+  useDisableBodyScroll(open);
 
   // —— common helpers ——
   const handleCancel = () => {
