@@ -7,7 +7,7 @@ import { RefObject } from 'react';
 import { NewActionItemFormProps } from '@/types';
 import { useDisableBodyScroll } from '@/hooks';
 import { ReminderToggle } from '@/components/ui';
-import { shouldEnableReminderByDefault, DEFAULT_REMINDER_MINUTES } from '@/utils';
+import { DEFAULT_REMINDER_MINUTES } from '@/utils';
 
 export function NewManualTaskModal({
   inputRef,
@@ -21,6 +21,7 @@ export function NewManualTaskModal({
   setReminderMinutesBeforeDue,
   handleAdd,
   onClose,
+  isLoading = false,
 }: Omit<NewActionItemFormProps, 'inputRef'> & {
   inputRef: RefObject<HTMLTextAreaElement>;
   onClose: () => void;
@@ -29,7 +30,7 @@ export function NewManualTaskModal({
 
   const handleSave = async () => {
     await handleAdd();
-    onClose();
+    // Note: onClose is now handled in the parent component after successful creation
   };
 
   // Auto-enable reminder when due date is set (if not already set)
@@ -110,9 +111,9 @@ export function NewManualTaskModal({
           <button
             onClick={handleSave}
             className="rounded px-4 py-2 text-xs bg-blue-600 text-white hover:bg-blue-700 transition disabled:opacity-50"
-            disabled={!newText.trim()}
+            disabled={!newText.trim() || isLoading}
           >
-            Save Task
+            {isLoading ? 'Saving...' : 'Save Task'}
           </button>
         </div>
 
