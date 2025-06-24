@@ -8,6 +8,8 @@ export type MinimalActionItem = Pick<BaseActionItem, 'text'> & {
   suggestedTime: string | null;
   dueAt?: string | null;
   isDateOnly?: boolean;
+  shouldRemind?: boolean;
+  reminderMinutesBeforeDue?: number | null;
 };
 export interface AiChunkedSummaryRequest {
   Input: string;
@@ -22,6 +24,8 @@ export interface AiSummaryWithTasksResponse {
     dueAt?: string;
     suggestedTime?: string;
     isDateOnly?: boolean;
+    shouldRemind?: boolean;
+    reminderMinutesBeforeDue?: number | null;
   }[];
 }
 
@@ -48,6 +52,8 @@ export interface UseAiReviewReturn {
   handleTaskDelete: (index: number) => void;
   handleTaskTimeEdit: (index: number, date: Date | null) => void;
   handleTaskDateOnlyToggle: (index: number, value: boolean) => void;
+  handleTaskReminderToggle: (index: number, shouldRemind: boolean) => void;
+  handleTaskReminderMinutesChange: (index: number, minutes: number | null) => void;
   handleConfirmSave: (originalText: string) => Promise<void>;
 }
 // AI Task Modal Types

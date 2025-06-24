@@ -5,10 +5,16 @@ import { Upload, X } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
-import { useAiGeneration, useAiReview, useDisableBodyScroll } from '@/hooks';
-import { TypewriterThinking } from '@/components';
+import { useAiGeneration, useDisableBodyScroll } from '@/hooks';
+import { useAiReview } from '@/hooks/ai/useAiReview';
+import { TypewriterThinking, ReminderToggle } from '@/components';
 import { api } from '@/services';
-import type { AiSummaryWithTasksResponse, AiTaskModalMode, AiTaskModalProps } from '@/types';
+import type {
+  AiSummaryWithTasksResponse,
+  AiTaskModalMode,
+  AiTaskModalProps,
+  UseAiReviewReturn,
+} from '@/types';
 
 export function AiTaskModal({ open, onClose, mode }: AiTaskModalProps) {
   // —— AI generation hook ——
@@ -26,6 +32,8 @@ export function AiTaskModal({ open, onClose, mode }: AiTaskModalProps) {
     handleTaskDelete,
     handleTaskTimeEdit,
     handleTaskDateOnlyToggle,
+    handleTaskReminderToggle,
+    handleTaskReminderMinutesChange,
     handleConfirmSave,
   } = useAiReview();
 
@@ -57,12 +65,17 @@ export function AiTaskModal({ open, onClose, mode }: AiTaskModalProps) {
       const { summary, actionItems } = await generateTasks();
       setReviewSummary(summary);
       setEditableTasks(
-        actionItems.map((item) => ({
-          text: item.text,
-          suggestedTime: item.suggestedTime,
-          isDateOnly: item.isDateOnly,
-          dueAt: item.suggestedTime || new Date().toISOString(),
-        })),
+        actionItems.map((item) => {
+          const hasDueDate = item.suggestedTime;
+          return {
+            text: item.text,
+            suggestedTime: item.suggestedTime,
+            isDateOnly: item.isDateOnly,
+            dueAt: item.suggestedTime || new Date().toISOString(),
+            shouldRemind: hasDueDate ? true : false,
+            reminderMinutesBeforeDue: hasDueDate ? 30 : null,
+          };
+        }),
       );
       setShowReview(true);
     } catch (error) {
@@ -92,12 +105,17 @@ export function AiTaskModal({ open, onClose, mode }: AiTaskModalProps) {
       setFileSummary(resp.data.summary);
       setReviewSummary(resp.data.summary);
       setEditableTasks(
-        resp.data.actionItems.map((item) => ({
-          text: item.text,
-          suggestedTime: item.dueAt || item.suggestedTime || null,
-          dueAt: item.dueAt || null,
-          isDateOnly: item.isDateOnly ?? false,
-        })),
+        resp.data.actionItems.map((item) => {
+          const hasDueDate = item.dueAt || item.suggestedTime;
+          return {
+            text: item.text,
+            suggestedTime: item.dueAt || item.suggestedTime || null,
+            dueAt: item.dueAt || null,
+            isDateOnly: item.isDateOnly ?? false,
+            shouldRemind: hasDueDate ? true : false,
+            reminderMinutesBeforeDue: hasDueDate ? 30 : null,
+          };
+        }),
       );
       setShowReview(true);
     } catch (err) {
@@ -276,6 +294,16 @@ export function AiTaskModal({ open, onClose, mode }: AiTaskModalProps) {
                         All-day
                       </label>
                     </div>
+
+                    {/* Reminder Toggle */}
+                    <ReminderToggle
+                      shouldRemind={t.shouldRemind ?? false}
+                      onShouldRemindChange={(value) => handleTaskReminderToggle(i, value)}
+                      reminderMinutesBeforeDue={t.reminderMinutesBeforeDue ?? null}
+                      onReminderMinutesChange={(value) => handleTaskReminderMinutesChange(i, value)}
+                      disabled={!t.suggestedTime}
+                      className="mt-2"
+                    />
                   </li>
                 ))}
               </ul>

@@ -46,6 +46,10 @@ export interface NewActionItemFormProps {
   setNewText: (text: string) => void;
   newDueAt: Date | null;
   setNewDueAt: (date: Date | null) => void;
+  shouldRemind: boolean;
+  setShouldRemind: (value: boolean) => void;
+  reminderMinutesBeforeDue: number | null;
+  setReminderMinutesBeforeDue: (value: number | null) => void;
   handleAdd: () => Promise<void>;
 }
 

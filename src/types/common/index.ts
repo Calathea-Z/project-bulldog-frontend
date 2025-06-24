@@ -8,4 +8,6 @@ export interface BaseActionItem {
   suggestedTime: string | null;
   dueAt?: string | null;
   isDateOnly?: boolean;
+  shouldRemind?: boolean;
+  reminderMinutesBeforeDue?: number | null;
 }

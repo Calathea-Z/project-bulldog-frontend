@@ -6,6 +6,8 @@ import 'react-datepicker/dist/react-datepicker.css';
 import { RefObject } from 'react';
 import { NewActionItemFormProps } from '@/types';
 import { useDisableBodyScroll } from '@/hooks';
+import { ReminderToggle } from '@/components/ui';
+import { shouldEnableReminderByDefault, DEFAULT_REMINDER_MINUTES } from '@/utils';
 
 export function NewManualTaskModal({
   inputRef,
@@ -13,6 +15,10 @@ export function NewManualTaskModal({
   setNewText,
   newDueAt,
   setNewDueAt,
+  shouldRemind,
+  setShouldRemind,
+  reminderMinutesBeforeDue,
+  setReminderMinutesBeforeDue,
   handleAdd,
   onClose,
 }: Omit<NewActionItemFormProps, 'inputRef'> & {
@@ -24,6 +30,17 @@ export function NewManualTaskModal({
   const handleSave = async () => {
     await handleAdd();
     onClose();
+  };
+
+  // Auto-enable reminder when due date is set (if not already set)
+  const handleDueDateChange = (date: Date | null) => {
+    setNewDueAt(date);
+
+    // Auto-enable reminder if due date is set and reminder isn't already configured
+    if (date && !shouldRemind && reminderMinutesBeforeDue === null) {
+      setShouldRemind(true);
+      setReminderMinutesBeforeDue(DEFAULT_REMINDER_MINUTES);
+    }
   };
 
   return (
@@ -61,7 +78,7 @@ export function NewManualTaskModal({
               <span className="absolute left-3 top-1/2 -translate-y-1/2">📅</span>
               <DatePicker
                 selected={newDueAt}
-                onChange={(date) => setNewDueAt(date)}
+                onChange={handleDueDateChange}
                 showTimeSelect
                 dateFormat="MMM d, yyyy h:mm aa"
                 placeholderText="Set due date"
@@ -69,6 +86,16 @@ export function NewManualTaskModal({
                 className="w-full pl-9 pr-3 py-2 rounded-md border border-accent bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary"
               />
             </div>
+
+            {/* Reminder Toggle */}
+            <ReminderToggle
+              shouldRemind={shouldRemind}
+              onShouldRemindChange={setShouldRemind}
+              reminderMinutesBeforeDue={reminderMinutesBeforeDue}
+              onReminderMinutesChange={setReminderMinutesBeforeDue}
+              disabled={!newDueAt}
+              className="mt-4"
+            />
           </div>
         </div>
 

@@ -3,6 +3,8 @@ export interface MinimalActionItem {
   suggestedTime: string | null;
   dueAt: string | null;
   isDateOnly: boolean;
+  shouldRemind?: boolean;
+  reminderMinutesBeforeDue?: number | null;
 }
 
 export interface ActionItem {
@@ -12,6 +14,8 @@ export interface ActionItem {
   isDone: boolean;
   dueAt: string | null;
   isDateOnly: boolean;
+  shouldRemind: boolean;
+  reminderMinutesBeforeDue: number | null;
 }
 
 export interface Summary {

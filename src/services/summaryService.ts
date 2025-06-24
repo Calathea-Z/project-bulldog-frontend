@@ -9,6 +9,8 @@ export const summaryService = {
       text: string;
       dueAt: string | null;
       isDateOnly: boolean; // ✅ include this
+      shouldRemind?: boolean;
+      reminderMinutesBeforeDue?: number | null;
     }[];
   }): Promise<Summary> => api.post('/summaries', payload).then((r) => r.data),
 };
