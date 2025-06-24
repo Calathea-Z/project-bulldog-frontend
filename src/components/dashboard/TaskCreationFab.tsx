@@ -5,6 +5,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useState, useRef } from 'react';
 import { AiTaskModal, NewManualTaskModal } from '@/components';
 import { TaskCreationFabProps } from '@/types';
+import { useCreateActionItem } from '@/hooks';
+import { toast } from 'react-hot-toast';
 
 export function TaskCreationFab({ expanded, setExpanded, onVoiceCapture }: TaskCreationFabProps) {
   const [taskModalOpen, setTaskModalOpen] = useState(false);
@@ -16,6 +18,8 @@ export function TaskCreationFab({ expanded, setExpanded, onVoiceCapture }: TaskC
   const [shouldRemind, setShouldRemind] = useState(false);
   const [reminderMinutesBeforeDue, setReminderMinutesBeforeDue] = useState<number | null>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+
+  const createActionItem = useCreateActionItem();
 
   const handleAction = (action: () => void) => {
     setExpanded(false);
@@ -32,12 +36,28 @@ export function TaskCreationFab({ expanded, setExpanded, onVoiceCapture }: TaskC
 
   const handleAdd = async () => {
     if (!newText.trim()) return;
-    // TODO: Replace with actual mutation
-    setNewText('');
-    setNewDueAt(null);
-    setShouldRemind(false);
-    setReminderMinutesBeforeDue(null);
-    setShowManualForm(false);
+
+    try {
+      await createActionItem.mutateAsync({
+        text: newText.trim(),
+        dueAt: newDueAt ? newDueAt.toISOString() : null,
+        isDateOnly: false, // Default to false for manual tasks
+        shouldRemind,
+        reminderMinutesBeforeDue,
+      });
+
+      toast.success('Task created successfully!');
+
+      // Reset form
+      setNewText('');
+      setNewDueAt(null);
+      setShouldRemind(false);
+      setReminderMinutesBeforeDue(null);
+      setShowManualForm(false);
+    } catch (error) {
+      console.error('Failed to create task:', error);
+      toast.error('Failed to create task. Please try again.');
+    }
   };
 
   const handleCloseManualForm = () => {
@@ -163,6 +183,7 @@ export function TaskCreationFab({ expanded, setExpanded, onVoiceCapture }: TaskC
           setReminderMinutesBeforeDue={setReminderMinutesBeforeDue}
           handleAdd={handleAdd}
           onClose={handleCloseManualForm}
+          isLoading={createActionItem.isPending}
         />
       )}
     </div>

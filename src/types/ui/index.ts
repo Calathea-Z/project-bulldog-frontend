@@ -51,6 +51,7 @@ export interface NewActionItemFormProps {
   reminderMinutesBeforeDue: number | null;
   setReminderMinutesBeforeDue: (value: number | null) => void;
   handleAdd: () => Promise<void>;
+  isLoading?: boolean;
 }
 
 // Task List Types
