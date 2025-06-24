@@ -5,11 +5,12 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'react-hot-toast';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
-import { Check, Pencil, Trash2 } from 'lucide-react';
+import { Check, Pencil, Trash2, Bell, BellOff } from 'lucide-react';
 import TextareaAutosize from 'react-textarea-autosize';
 import { ActionItem } from '@/types';
-import { convertToUtcDate, formatDueDate } from '@/utils';
+import { convertToUtcDate, formatDueDate, formatReminderTime } from '@/utils';
 import { useUpdateActionItem } from '@/hooks';
+import { ReminderToggle } from '@/components/ui';
 
 interface ActionItemRowProps {
   item: ActionItem;
@@ -28,10 +29,16 @@ export function ActionItemRow({
   const [editText, setEditText] = useState(item.text);
   const [editDueAt, setEditDueAt] = useState<Date | null>(item.dueAt ? new Date(item.dueAt) : null);
   const [isDateOnly, setIsDateOnly] = useState(item.isDateOnly ?? false);
+  const [shouldRemind, setShouldRemind] = useState(item.shouldRemind ?? false);
+  const [reminderMinutesBeforeDue, setReminderMinutesBeforeDue] = useState<number | null>(
+    item.reminderMinutesBeforeDue ?? null,
+  );
 
   useEffect(() => {
     setEditDueAt(item.dueAt ? new Date(item.dueAt) : null);
-  }, [item.dueAt]);
+    setShouldRemind(item.shouldRemind ?? false);
+    setReminderMinutesBeforeDue(item.reminderMinutesBeforeDue ?? null);
+  }, [item.dueAt, item.shouldRemind, item.reminderMinutesBeforeDue]);
 
   const handleEditClick = () => setIsEditing(true);
   const handleDeleteClick = () => handleDelete(item.id);
@@ -54,6 +61,8 @@ export function ActionItemRow({
               : editDueAt.toISOString()
             : null,
           isDateOnly,
+          shouldRemind,
+          reminderMinutesBeforeDue,
         },
       },
       {
@@ -64,12 +73,22 @@ export function ActionItemRow({
         onError: () => toast.error('Failed to update'),
       },
     );
-  }, [editText, editDueAt, isDateOnly, updateActionItem, item.id]);
+  }, [
+    editText,
+    editDueAt,
+    isDateOnly,
+    updateActionItem,
+    item.id,
+    shouldRemind,
+    reminderMinutesBeforeDue,
+  ]);
 
   const handleCancel = useCallback(() => {
     setEditText(item.text);
     setEditDueAt(item.dueAt ? new Date(item.dueAt) : null);
     setIsDateOnly(item.isDateOnly ?? false);
+    setShouldRemind(item.shouldRemind ?? false);
+    setReminderMinutesBeforeDue(item.reminderMinutesBeforeDue ?? null);
     setIsEditing(false);
   }, [item]);
 
@@ -142,6 +161,16 @@ export function ActionItemRow({
                 </div>
               </div>
 
+              {/* Reminder Toggle */}
+              <ReminderToggle
+                shouldRemind={shouldRemind}
+                onShouldRemindChange={setShouldRemind}
+                reminderMinutesBeforeDue={reminderMinutesBeforeDue}
+                onReminderMinutesChange={setReminderMinutesBeforeDue}
+                disabled={!editDueAt}
+                className="mt-2"
+              />
+
               <div className="flex justify-end gap-2 mt-1 pt-2">
                 <button
                   onClick={handleCancel}
@@ -196,6 +225,15 @@ export function ActionItemRow({
                         : formatDueDate(item.dueAt)
                       : 'No due date'}
                   </span>
+                  {item.shouldRemind && item.reminderMinutesBeforeDue && (
+                    <span
+                      className="flex items-center gap-1 text-blue-600 hover:text-blue-700 transition-colors cursor-help"
+                      title={`Reminder set for ${formatReminderTime(item.reminderMinutesBeforeDue)} before due date`}
+                    >
+                      <Bell className="w-3 h-3" />
+                      {formatReminderTime(item.reminderMinutesBeforeDue)}
+                    </span>
+                  )}
                   {isOverdue && (
                     <span className="text-red-500 font-semibold flex items-center gap-1">
                       🔴 Overdue
@@ -235,6 +273,8 @@ export const MemoizedActionItemRow = React.memo(ActionItemRow, (prev, next) => {
     a.text === b.text &&
     a.dueAt === b.dueAt &&
     a.isDone === b.isDone &&
-    a.isDateOnly === b.isDateOnly
+    a.isDateOnly === b.isDateOnly &&
+    a.shouldRemind === b.shouldRemind &&
+    a.reminderMinutesBeforeDue === b.reminderMinutesBeforeDue
   );
 });

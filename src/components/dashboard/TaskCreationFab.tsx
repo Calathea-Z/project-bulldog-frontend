@@ -13,6 +13,8 @@ export function TaskCreationFab({ expanded, setExpanded, onVoiceCapture }: TaskC
 
   const [newText, setNewText] = useState('');
   const [newDueAt, setNewDueAt] = useState<Date | null>(null);
+  const [shouldRemind, setShouldRemind] = useState(false);
+  const [reminderMinutesBeforeDue, setReminderMinutesBeforeDue] = useState<number | null>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
   const handleAction = (action: () => void) => {
@@ -33,7 +35,17 @@ export function TaskCreationFab({ expanded, setExpanded, onVoiceCapture }: TaskC
     // TODO: Replace with actual mutation
     setNewText('');
     setNewDueAt(null);
+    setShouldRemind(false);
+    setReminderMinutesBeforeDue(null);
     setShowManualForm(false);
+  };
+
+  const handleCloseManualForm = () => {
+    setShowManualForm(false);
+    setNewText('');
+    setNewDueAt(null);
+    setShouldRemind(false);
+    setReminderMinutesBeforeDue(null);
   };
 
   const actions = [
@@ -145,8 +157,12 @@ export function TaskCreationFab({ expanded, setExpanded, onVoiceCapture }: TaskC
           setNewText={setNewText}
           newDueAt={newDueAt}
           setNewDueAt={setNewDueAt}
+          shouldRemind={shouldRemind}
+          setShouldRemind={setShouldRemind}
+          reminderMinutesBeforeDue={reminderMinutesBeforeDue}
+          setReminderMinutesBeforeDue={setReminderMinutesBeforeDue}
           handleAdd={handleAdd}
-          onClose={() => setShowManualForm(false)}
+          onClose={handleCloseManualForm}
         />
       )}
     </div>

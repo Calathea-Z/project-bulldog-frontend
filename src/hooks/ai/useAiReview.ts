@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { toast } from 'react-hot-toast';
 import { useCreateSummary } from '@/hooks';
-import { MinimalActionItem, UseAiReviewReturn } from '@/types';
+import { MinimalActionItem, AiReviewReturn } from '@/types';
+import { DEFAULT_REMINDER_MINUTES } from '@/utils';
 
-export function useAiReview(): UseAiReviewReturn {
+export function useAiReview(): AiReviewReturn {
   const createSummary = useCreateSummary();
   const [editableTasks, setEditableTasks] = useState<MinimalActionItem[]>([]);
   const [reviewSummary, setReviewSummary] = useState('');
@@ -22,12 +23,34 @@ export function useAiReview(): UseAiReviewReturn {
   const handleTaskTimeEdit = (index: number, date: Date | null) => {
     const tasks = [...editableTasks];
     tasks[index].suggestedTime = date?.toISOString() || null;
+
+    // Auto-enable reminder if due date is set and reminder isn't already configured
+    if (date && !tasks[index].shouldRemind && tasks[index].reminderMinutesBeforeDue === null) {
+      tasks[index].shouldRemind = true;
+      tasks[index].reminderMinutesBeforeDue = DEFAULT_REMINDER_MINUTES;
+    }
+
     setEditableTasks(tasks);
   };
 
   const handleTaskDateOnlyToggle = (index: number, value: boolean) => {
     const tasks = [...editableTasks];
     tasks[index].isDateOnly = value;
+    setEditableTasks(tasks);
+  };
+
+  const handleTaskReminderToggle = (index: number, shouldRemind: boolean) => {
+    const tasks = [...editableTasks];
+    tasks[index].shouldRemind = shouldRemind;
+    if (shouldRemind && tasks[index].reminderMinutesBeforeDue === null) {
+      tasks[index].reminderMinutesBeforeDue = DEFAULT_REMINDER_MINUTES;
+    }
+    setEditableTasks(tasks);
+  };
+
+  const handleTaskReminderMinutesChange = (index: number, minutes: number | null) => {
+    const tasks = [...editableTasks];
+    tasks[index].reminderMinutesBeforeDue = minutes;
     setEditableTasks(tasks);
   };
 
@@ -40,6 +63,8 @@ export function useAiReview(): UseAiReviewReturn {
           text: item.text,
           dueAt: item.suggestedTime,
           isDateOnly: item.isDateOnly ?? false,
+          shouldRemind: item.shouldRemind ?? false,
+          reminderMinutesBeforeDue: item.reminderMinutesBeforeDue,
         })),
       });
       toast.success(
@@ -63,6 +88,8 @@ export function useAiReview(): UseAiReviewReturn {
     handleTaskDelete,
     handleTaskTimeEdit,
     handleTaskDateOnlyToggle,
+    handleTaskReminderToggle,
+    handleTaskReminderMinutesChange,
     handleConfirmSave,
   };
 }

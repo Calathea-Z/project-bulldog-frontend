@@ -8,3 +8,4 @@ export * from './loaders/PullProgressBar';
 export * from './PrivacyNotice';
 export * from './LogoutButton';
 export * from './BottomNav';
+export * from './ReminderToggle';
