@@ -69,8 +69,8 @@ export function Providers({ children }: { children: React.ReactNode }) {
               className="fixed top-0 left-0 w-full z-50 bg-yellow-100 text-yellow-900 px-4 py-3 flex items-center justify-between shadow-md"
             >
               <span>
-                <strong>We couldn't detect your timezone.</strong> Please select it to make sure
-                your reminders fire at the right time.
+                <strong>We couldn&apos;t detect your timezone.</strong> Please select it to make
+                sure your reminders fire at the right time.
               </span>
               <div className="flex gap-2 ml-4">
                 <a
