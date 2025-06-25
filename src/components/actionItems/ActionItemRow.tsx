@@ -1,22 +1,37 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'react-hot-toast';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
-import { Check, Pencil, Trash2, Bell, BellOff } from 'lucide-react';
+import { Check, Pencil, Trash2, Bell } from 'lucide-react';
 import TextareaAutosize from 'react-textarea-autosize';
 import { ActionItem } from '@/types';
-import { convertToUtcDate, formatDueDate, formatReminderTime } from '@/utils';
-import { useUpdateActionItem } from '@/hooks';
+import {
+  convertToUtcDate,
+  formatDate,
+  formatDateOnly,
+  convertLocalToUTC,
+  formatReminderTime,
+  normalizeDateString,
+  isTaskOverdue,
+  getMutationErrorMessage,
+} from '@/utils';
+import { UseMutationResult } from '@tanstack/react-query';
 import { ReminderToggle } from '@/components/ui';
 
 interface ActionItemRowProps {
   item: ActionItem;
   handleToggle: (id: string) => void;
   handleDelete: (id: string) => void;
-  updateActionItem: ReturnType<typeof useUpdateActionItem>;
+  updateActionItem: UseMutationResult<
+    void,
+    unknown,
+    { id: string; payload: Partial<ActionItem> },
+    unknown
+  >;
+  userTimeZoneDisplay: string;
 }
 
 export function ActionItemRow({
@@ -24,6 +39,7 @@ export function ActionItemRow({
   handleToggle,
   handleDelete,
   updateActionItem,
+  userTimeZoneDisplay,
 }: ActionItemRowProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editText, setEditText] = useState(item.text);
@@ -33,12 +49,45 @@ export function ActionItemRow({
   const [reminderMinutesBeforeDue, setReminderMinutesBeforeDue] = useState<number | null>(
     item.reminderMinutesBeforeDue ?? null,
   );
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
+  // Sync local edit state with item props when they change (e.g., from external updates)
   useEffect(() => {
     setEditDueAt(item.dueAt ? new Date(item.dueAt) : null);
     setShouldRemind(item.shouldRemind ?? false);
     setReminderMinutesBeforeDue(item.reminderMinutesBeforeDue ?? null);
   }, [item.dueAt, item.shouldRemind, item.reminderMinutesBeforeDue]);
+
+  // Track dirty state for immediate visual feedback
+  const isDirty = useMemo(() => {
+    const currentDueAt = editDueAt
+      ? isDateOnly
+        ? convertToUtcDate(editDueAt).toISOString()
+        : convertLocalToUTC(editDueAt)
+      : null;
+
+    const normalizedCurrentDueAt = normalizeDateString(currentDueAt);
+    const normalizedOriginalDueAt = normalizeDateString(item.dueAt || null);
+
+    return (
+      editText !== item.text ||
+      normalizedCurrentDueAt !== normalizedOriginalDueAt ||
+      isDateOnly !== (item.isDateOnly ?? false) ||
+      shouldRemind !== (item.shouldRemind ?? false) ||
+      reminderMinutesBeforeDue !== (item.reminderMinutesBeforeDue ?? null)
+    );
+  }, [
+    editText,
+    editDueAt,
+    isDateOnly,
+    shouldRemind,
+    reminderMinutesBeforeDue,
+    item.text,
+    item.dueAt,
+    item.isDateOnly,
+    item.shouldRemind,
+    item.reminderMinutesBeforeDue,
+  ]);
 
   const handleEditClick = () => setIsEditing(true);
   const handleDeleteClick = () => handleDelete(item.id);
@@ -50,16 +99,48 @@ export function ActionItemRow({
       return;
     }
 
+    // Prevent multiple simultaneous mutations
+    if (updateActionItem.isPending) {
+      return;
+    }
+
+    // Check if anything has actually changed using a more robust comparison
+    const currentDueAt = editDueAt
+      ? isDateOnly
+        ? convertToUtcDate(editDueAt).toISOString()
+        : convertLocalToUTC(editDueAt)
+      : null;
+
+    // Normalize the original dueAt for comparison
+    const originalDueAt = item.dueAt || null;
+
+    const hasTextChanged = editText !== item.text;
+    const hasDueAtChanged =
+      normalizeDateString(currentDueAt) !== normalizeDateString(originalDueAt);
+    const hasDateOnlyChanged = isDateOnly !== (item.isDateOnly ?? false);
+    const hasRemindChanged = shouldRemind !== (item.shouldRemind ?? false);
+    const hasReminderTimeChanged =
+      reminderMinutesBeforeDue !== (item.reminderMinutesBeforeDue ?? null);
+
+    if (
+      !hasTextChanged &&
+      !hasDueAtChanged &&
+      !hasDateOnlyChanged &&
+      !hasRemindChanged &&
+      !hasReminderTimeChanged
+    ) {
+      setIsEditing(false);
+      return;
+    }
+
+    setIsEditing(false);
+
     updateActionItem.mutate(
       {
         id: item.id,
         payload: {
           text: editText,
-          dueAt: editDueAt
-            ? isDateOnly
-              ? convertToUtcDate(editDueAt).toISOString()
-              : editDueAt.toISOString()
-            : null,
+          dueAt: currentDueAt,
           isDateOnly,
           shouldRemind,
           reminderMinutesBeforeDue,
@@ -68,9 +149,17 @@ export function ActionItemRow({
       {
         onSuccess: () => {
           toast.success('Updated successfully');
-          setIsEditing(false);
         },
-        onError: () => toast.error('Failed to update'),
+        onError: (error) => {
+          // Reopen edit mode on error so user can retry
+          setIsEditing(true);
+          const errorMessage = getMutationErrorMessage(
+            error,
+            'Failed to update. Please try again.',
+          );
+          toast.error(errorMessage);
+          console.error('Update failed:', error);
+        },
       },
     );
   }, [
@@ -81,6 +170,11 @@ export function ActionItemRow({
     item.id,
     shouldRemind,
     reminderMinutesBeforeDue,
+    item.text,
+    item.dueAt,
+    item.isDateOnly,
+    item.shouldRemind,
+    item.reminderMinutesBeforeDue,
   ]);
 
   const handleCancel = useCallback(() => {
@@ -92,7 +186,42 @@ export function ActionItemRow({
     setIsEditing(false);
   }, [item]);
 
-  const isOverdue = item.dueAt && new Date(item.dueAt) < new Date() && !item.isDone;
+  // Add keyboard event listener to textarea when editing
+  useEffect(() => {
+    if (!isEditing) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        e.stopPropagation();
+        handleCancel();
+      }
+    };
+
+    // Use global listener for Escape key
+    window.addEventListener('keydown', handleKeyDown, true);
+    return () => window.removeEventListener('keydown', handleKeyDown, true);
+  }, [isEditing, handleCancel]);
+
+  // Separate effect for Enter key on textarea
+  useEffect(() => {
+    if (!isEditing || !textareaRef.current) return;
+
+    const textarea = textareaRef.current;
+
+    const handleKeyDown = (e: Event) => {
+      const keyboardEvent = e as KeyboardEvent;
+      if (keyboardEvent.key === 'Enter' && !keyboardEvent.shiftKey) {
+        keyboardEvent.preventDefault();
+        handleSave();
+      }
+    };
+
+    textarea.addEventListener('keydown', handleKeyDown);
+    return () => textarea.removeEventListener('keydown', handleKeyDown);
+  }, [isEditing, handleSave]);
+
+  const isOverdue = isTaskOverdue(item.dueAt, item.isDone);
 
   return (
     <motion.li
@@ -112,7 +241,7 @@ export function ActionItemRow({
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
             transition={{ duration: 0.25, ease: 'easeInOut' }}
-            className="px-4 py-3"
+            className="px-4 py-3 edit-container min-h-[110px]"
           >
             <div className="flex flex-col gap-4 mt-1">
               <TextareaAutosize
@@ -123,6 +252,7 @@ export function ActionItemRow({
                 autoFocus
                 className="w-full resize-none rounded-md border border-accent bg-background px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary shadow-sm"
                 aria-label="Edit task text"
+                ref={textareaRef}
               />
               <div className="text-xs text-muted text-right mt-[-6px] mb-1">
                 {editText.length} characters
@@ -143,7 +273,13 @@ export function ActionItemRow({
                   timeIntervals={15}
                   timeCaption="Time"
                   isClearable
+                  aria-label={`Select due date for task "${item.text}"${isDateOnly ? ' (all-day)' : ' with time'}`}
                 />
+                {userTimeZoneDisplay && (
+                  <div className="mt-1 ml-2 text-xs text-zinc-500 dark:text-zinc-400">
+                    Your local time zone: <span className="font-medium">{userTimeZoneDisplay}</span>
+                  </div>
+                )}
                 <div className="flex items-center gap-2 mt-1 ml-1">
                   <label
                     htmlFor={`all-day-${item.id}`}
@@ -161,7 +297,6 @@ export function ActionItemRow({
                 </div>
               </div>
 
-              {/* Reminder Toggle */}
               <ReminderToggle
                 shouldRemind={shouldRemind}
                 onShouldRemindChange={setShouldRemind}
@@ -174,16 +309,22 @@ export function ActionItemRow({
               <div className="flex justify-end gap-2 mt-1 pt-2">
                 <button
                   onClick={handleCancel}
+                  title="Cancel editing task"
                   className="text-xs rounded bg-gray-200 px-3 py-1.5 text-gray-800 hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400"
                 >
                   ❌ Cancel
                 </button>
                 <button
                   onClick={handleSave}
-                  disabled={updateActionItem.isPending}
-                  className="text-xs rounded bg-green-600 px-3 py-1.5 text-white hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-400 disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled={!isDirty}
+                  title={isDirty ? 'Save task changes' : 'No changes to save'}
+                  className={`text-xs rounded px-3 py-1.5 focus:outline-none focus:ring-2 transition-colors ${
+                    isDirty
+                      ? 'bg-green-600 text-white hover:bg-green-700 focus:ring-green-400'
+                      : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                  }`}
                 >
-                  {updateActionItem.isPending ? 'Saving...' : '✅ Save'}
+                  ✅ Save
                 </button>
               </div>
             </div>
@@ -195,9 +336,9 @@ export function ActionItemRow({
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
             transition={{ duration: 0.25, ease: 'easeInOut' }}
-            className="px-4 py-3"
+            className="px-4 py-3 min-h-[110px]"
           >
-            <div className="flex flex-col justify-between min-h-[110px] gap-2">
+            <div className="flex flex-col justify-between gap-2">
               <div className="flex items-start gap-3">
                 <button
                   onClick={handleToggleClick}
@@ -221,8 +362,8 @@ export function ActionItemRow({
                     📅{' '}
                     {item.dueAt
                       ? item.isDateOnly
-                        ? formatDueDate(item.dueAt, { dateOnly: true })
-                        : formatDueDate(item.dueAt)
+                        ? formatDateOnly(item.dueAt)
+                        : formatDate(item.dueAt)
                       : 'No due date'}
                   </span>
                   {item.shouldRemind && item.reminderMinutesBeforeDue && (

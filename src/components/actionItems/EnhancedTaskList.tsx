@@ -5,6 +5,7 @@ import { FilterStatus, SortOption } from '@/types';
 import { sortActionItems } from '@/utils';
 import { EnhancedTaskListProps } from '@/types';
 import { motion } from 'framer-motion';
+import { useUserTimeZoneDisplay } from '@/hooks';
 
 export function EnhancedTaskList({
   items,
@@ -17,6 +18,9 @@ export function EnhancedTaskList({
   const [statusFilter, setStatusFilter] = useState<FilterStatus>('all');
   const [sortBy, setSortBy] = useState<SortOption>('date');
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+
+  // Compute timezone display string once
+  const userTimeZoneDisplay = useUserTimeZoneDisplay();
 
   // Filter and sort items
   const filteredAndSortedItems = useMemo(() => {
@@ -145,6 +149,7 @@ export function EnhancedTaskList({
             onToggle={onToggle}
             onDelete={onDelete}
             onUpdate={onUpdate}
+            userTimeZoneDisplay={userTimeZoneDisplay}
           />
         )}
       </div>

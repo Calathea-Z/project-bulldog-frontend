@@ -3,11 +3,13 @@
 import { X } from 'lucide-react';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
-import { RefObject } from 'react';
+import { RefObject, useEffect, useState } from 'react';
 import { NewActionItemFormProps } from '@/types';
 import { useDisableBodyScroll } from '@/hooks';
 import { ReminderToggle } from '@/components/ui';
 import { DEFAULT_REMINDER_MINUTES } from '@/utils';
+import { getUserTimeZoneId } from '@/utils/timezone';
+import { useUser } from '@/context/UserContext';
 
 export function NewManualTaskModal({
   inputRef,
@@ -28,9 +30,36 @@ export function NewManualTaskModal({
 }) {
   useDisableBodyScroll(true);
 
+  const { user } = useUser();
+  const [userTimeZone, setUserTimeZone] = useState<string>('');
+  const [userTimeZoneDisplay, setUserTimeZoneDisplay] = useState<string>('');
+
+  useEffect(() => {
+    let tz = user?.timeZoneId || getUserTimeZoneId();
+    setUserTimeZone(tz);
+    if (!tz) return;
+    try {
+      const now = new Date();
+      const formatter = new Intl.DateTimeFormat('en', {
+        timeZone: tz,
+        timeZoneName: 'long',
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+      const parts = formatter.formatToParts(now);
+      const tzName = parts.find((p) => p.type === 'timeZoneName')?.value || tz;
+      const utc = new Date(now.getTime() + now.getTimezoneOffset() * 60000);
+      const target = new Date(utc.toLocaleString('en-US', { timeZone: tz }));
+      const offset = (target.getTime() - utc.getTime()) / (1000 * 60 * 60);
+      const sign = offset >= 0 ? '+' : '';
+      setUserTimeZoneDisplay(`${tzName} (UTC${sign}${offset})`);
+    } catch {
+      setUserTimeZoneDisplay(tz);
+    }
+  }, [user]);
+
   const handleSave = async () => {
     await handleAdd();
-    // Note: onClose is now handled in the parent component after successful creation
   };
 
   // Auto-enable reminder when due date is set (if not already set)
@@ -86,6 +115,12 @@ export function NewManualTaskModal({
                 minDate={new Date()}
                 className="w-full pl-9 pr-3 py-2 rounded-md border border-accent bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary"
               />
+              {userTimeZoneDisplay && (
+                <div className="mt-1 ml-2 text-xs text-zinc-500 dark:text-zinc-400">
+                  Times shown in your timezone:{' '}
+                  <span className="font-medium">{userTimeZoneDisplay}</span>
+                </div>
+              )}
             </div>
 
             {/* Reminder Toggle */}

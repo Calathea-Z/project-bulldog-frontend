@@ -56,22 +56,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    // iOS-specific restore
+    // iOS-specific restore with timeout to prevent blocking
     if (isIOS()) {
       const storedRefreshToken = localStorage.getItem('refreshToken');
       if (storedRefreshToken) {
-        refresh().then((token) => {
-          if (token) {
-            setAuthenticated(token); // accessToken only
-          } else {
+        const timeoutId = setTimeout(async () => {
+          try {
+            const token = await refresh();
+            if (token) {
+              setAuthenticated(token); // accessToken only
+            } else {
+              setAuth({ status: 'unauthenticated', accessToken: null });
+            }
+          } catch (error) {
+            console.warn('Failed to refresh token:', error);
             setAuth({ status: 'unauthenticated', accessToken: null });
           }
-        });
-        return;
+        }, 100); // Small delay to prevent blocking
+
+        return () => clearTimeout(timeoutId);
       }
     }
     setAuth({ status: 'unauthenticated', accessToken: null });
-  }, []);
+  }, [pathname]);
 
   /**
    * Handles user logout by clearing auth state and showing success message
@@ -95,10 +102,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
-/**
- * Custom hook to access authentication context
- * @throws {Error} If used outside of AuthProvider
- */
 export const useAuth = () => {
   const ctx = useContext(AuthContext);
   if (!ctx) throw new Error('useAuth must be used within <AuthProvider>');
