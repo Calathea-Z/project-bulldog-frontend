@@ -8,6 +8,8 @@ import React, {
 } from 'react';
 import { api } from '@/services';
 import { User } from '@/types';
+import { usePathname } from 'next/navigation';
+import { PUBLIC_ROUTES } from '@/constants';
 
 interface UserContextValue {
   user: User | null;
@@ -20,6 +22,9 @@ const UserContext = createContext<UserContextValue | undefined>(undefined);
 export const UserProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const pathname = usePathname();
+  const normalizedPath = pathname.replace(/\/$/, '');
+  const isPublic = PUBLIC_ROUTES.includes(normalizedPath);
 
   const fetchUser = useCallback(async () => {
     setIsLoading(true);
@@ -34,8 +39,10 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   useEffect(() => {
-    fetchUser();
-  }, [fetchUser]);
+    if (!isPublic) {
+      fetchUser();
+    }
+  }, [fetchUser, isPublic]);
 
   return (
     <UserContext.Provider value={{ user, isLoading, refetch: fetchUser }}>
