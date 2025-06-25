@@ -17,7 +17,10 @@ export function Providers({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    if (PUBLIC_ROUTES.includes(pathname)) return;
+    const normalizedPath = pathname.replace(/\/$/, '');
+    const isPublic = PUBLIC_ROUTES.includes(normalizedPath);
+    console.log('Providers useEffect', { pathname, normalizedPath, isPublic, PUBLIC_ROUTES });
+    if (isPublic) return;
 
     const dismissed = localStorage.getItem('tzBannerDismissed');
     if (dismissed) return;

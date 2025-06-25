@@ -45,7 +45,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
    */
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
-    if (PUBLIC_ROUTES.includes(pathname)) {
+    const normalizedPath = pathname.replace(/\/$/, '');
+    const isPublic = PUBLIC_ROUTES.includes(normalizedPath);
+    console.log('AuthContext useEffect', { pathname, normalizedPath, isPublic, PUBLIC_ROUTES });
+    if (isPublic) {
       setAuth({ status: 'unauthenticated', accessToken: null });
       return;
     }
