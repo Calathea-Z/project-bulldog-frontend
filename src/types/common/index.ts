@@ -11,3 +11,18 @@ export interface BaseActionItem {
   shouldRemind?: boolean;
   reminderMinutesBeforeDue?: number | null;
 }
+
+// User and timezone types used in settings and elsewhere
+export interface TimeZone {
+  id: string;
+  displayName: string;
+  standardName: string;
+  baseUtcOffset: number;
+}
+
+export interface User {
+  id: string;
+  email: string;
+  displayName: string;
+  timeZoneId?: string;
+}

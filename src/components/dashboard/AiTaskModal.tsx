@@ -9,6 +9,8 @@ import { useAiGeneration, useDisableBodyScroll } from '@/hooks';
 import { useAiReview } from '@/hooks/ai/useAiReview';
 import { TypewriterThinking, ReminderToggle } from '@/components';
 import { api } from '@/services';
+import { getUserTimeZoneId } from '@/utils/timezone';
+import { useUser } from '@/context/UserContext';
 import type {
   AiSummaryWithTasksResponse,
   AiTaskModalMode,
@@ -39,6 +41,9 @@ export function AiTaskModal({ open, onClose, mode }: AiTaskModalProps) {
 
   // —— shared UI state ——
   const [showSummary, setShowSummary] = useState(false);
+  const { user } = useUser();
+  const [userTimeZoneDisplay, setUserTimeZoneDisplay] = useState<string>('');
+  const [userTimeZone, setUserTimeZone] = useState<string>('');
 
   // —— file‐upload state ——
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -47,6 +52,31 @@ export function AiTaskModal({ open, onClose, mode }: AiTaskModalProps) {
   const [fileSummary, setFileSummary] = useState<string>('');
 
   useDisableBodyScroll(open);
+
+  // Set user timezone and display when user changes
+  useEffect(() => {
+    let tz = user?.timeZoneId || getUserTimeZoneId();
+    setUserTimeZone(tz);
+    if (!tz) return;
+    try {
+      const now = new Date();
+      const formatter = new Intl.DateTimeFormat('en', {
+        timeZone: tz,
+        timeZoneName: 'long',
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+      const parts = formatter.formatToParts(now);
+      const tzName = parts.find((p) => p.type === 'timeZoneName')?.value || tz;
+      const utc = new Date(now.getTime() + now.getTimezoneOffset() * 60000);
+      const target = new Date(utc.toLocaleString('en-US', { timeZone: tz }));
+      const offset = (target.getTime() - utc.getTime()) / (1000 * 60 * 60);
+      const sign = offset >= 0 ? '+' : '';
+      setUserTimeZoneDisplay(`${tzName} (UTC${sign}${offset})`);
+    } catch {
+      setUserTimeZoneDisplay(tz);
+    }
+  }, [user]);
 
   // —— common helpers ——
   const handleCancel = () => {
@@ -85,17 +115,25 @@ export function AiTaskModal({ open, onClose, mode }: AiTaskModalProps) {
 
   // —— file mode upload ——
   const handleFileUpload = async () => {
+    console.log('📁 File upload started');
     if (!selectedFile) return;
     setIsUploading(true);
     setUploadError(null);
 
     try {
+      console.log('📁 Creating FormData');
       const formData = new FormData();
       formData.append('file', selectedFile);
 
+      console.log('📁 Making API call to /uploads');
       const resp = await api.post<AiSummaryWithTasksResponse>('/uploads', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
+        headers: {
+          'Content-Type': 'multipart/form-data',
+          'X-User-TimeZone': userTimeZone,
+        },
       });
+
+      console.log('📁 API response received:', resp.data);
 
       if (!resp.data?.summary) {
         throw new Error('No summary in response');
@@ -118,11 +156,13 @@ export function AiTaskModal({ open, onClose, mode }: AiTaskModalProps) {
         }),
       );
       setShowReview(true);
+      console.log('📁 File upload completed successfully');
     } catch (err) {
-      console.error(err);
+      console.error('📁 File upload error:', err);
       toast.error('Upload failed.');
       setUploadError('Upload failed. Please try again.');
     } finally {
+      console.log('📁 File upload finished, setting loading to false');
       setIsUploading(false);
     }
   };
@@ -281,6 +321,12 @@ export function AiTaskModal({ open, onClose, mode }: AiTaskModalProps) {
                         minDate={new Date()}
                         className="w-full pl-9 pr-3 py-2 rounded-md border border-accent bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                       />
+                      {userTimeZoneDisplay && (
+                        <div className="mt-1 ml-2 text-xs text-zinc-500 dark:text-zinc-400">
+                          Times shown in your timezone:{' '}
+                          <span className="font-medium">{userTimeZoneDisplay}</span>
+                        </div>
+                      )}
                     </div>
                     <div className="flex items-center gap-2 mt-1 ml-1">
                       <input

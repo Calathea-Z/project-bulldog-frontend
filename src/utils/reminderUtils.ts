@@ -1,3 +1,5 @@
+import { isTaskOverdue } from './formatDate';
+
 // Reminder preset options for quick selection
 export const REMINDER_PRESETS = [
   { label: '10 min', value: 10 },
@@ -35,5 +37,6 @@ export const getReminderTime = (dueAt: string, minutesBefore: number): Date => {
 export const shouldEnableReminderByDefault = (dueAt: Date | null): boolean => {
   if (!dueAt) return false;
   // Enable reminder by default if due date is in the future
-  return dueAt > new Date();
+  // Use the same normalization logic as isTaskOverdue for consistency
+  return !isTaskOverdue(dueAt.toISOString(), false);
 };

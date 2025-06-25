@@ -1,8 +1,19 @@
 import axios, { AxiosInstance, AxiosError } from 'axios';
+import { toast } from 'react-hot-toast';
 import { RetryableRequest } from '@/types';
+
+// Top-level constants for better maintainability
+const AUTH_ROUTES = ['/auth/login', '/auth/register', '/auth/refresh', '/auth/logout'];
+const EXCLUDED_REFRESH_ROUTES = [
+  '/auth/login',
+  '/auth/register',
+  '/auth/refresh',
+  '/auth/resend-verification-email',
+];
 
 let accessToken: string | null = null;
 let isRefreshing = false;
+let cachedUserTimeZone: string | null = null;
 
 let failedQueue: {
   resolve: (value: unknown) => void;
@@ -83,12 +94,36 @@ const tryRefreshAccessToken = async (): Promise<string | null> => {
 };
 
 /**
- * Request interceptor to attach the access token to outgoing requests
+ * Request interceptor to attach the access token and timezone to outgoing requests
  */
-api.interceptors.request.use((config) => {
+api.interceptors.request.use(async (config) => {
+  console.log('🌐 API Request:', { url: config.url, method: config.method });
+
   if (accessToken && config.headers) {
     config.headers['Authorization'] = `Bearer ${accessToken}`;
   }
+
+  // Don't add timezone headers for auth routes to avoid circular dependency
+  const isAuthRoute = config.url && AUTH_ROUTES.some((route) => config.url!.includes(route));
+
+  // Add user timezone header for cross-device consistency (only for non-auth routes)
+  if (!isAuthRoute && config.headers && !config.headers['X-User-TimeZone']) {
+    // Use simple browser detection to avoid circular dependency
+    if (!cachedUserTimeZone) {
+      try {
+        cachedUserTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      } catch (error) {
+        console.warn('Failed to get user timezone from browser:', error);
+        cachedUserTimeZone = 'UTC';
+      }
+    }
+
+    if (cachedUserTimeZone) {
+      config.headers['X-User-TimeZone'] = cachedUserTimeZone;
+    }
+  }
+
+  console.log('🌐 Request config prepared');
   return config;
 });
 
@@ -97,64 +132,123 @@ api.interceptors.request.use((config) => {
  * - Retries failed requests with new token
  * - Queues concurrent requests during refresh
  * - Redirects to login on refresh failure
+ * - Handles 401 errors globally with user-friendly messages
  */
 api.interceptors.response.use(
-  (res) => res,
+  (res) => {
+    console.log('🌐 API Response:', { url: res.config.url, status: res.status });
+    return res;
+  },
   async (err) => {
+    console.log('🌐 API Error:', {
+      url: err.config?.url,
+      status: err.response?.status,
+      message: err.message,
+    });
+
     const originalRequest = err.config as RetryableRequest;
 
-    // Define routes that should not trigger a token refresh
-    const excludedRoutes = [
-      '/auth/login',
-      '/auth/register',
-      '/auth/refresh',
-      '/auth/resend-verification-email',
-    ];
+    // Handle 401 errors globally with user-friendly messages
+    if (err.response?.status === 401) {
+      const errorMessage = err.response?.data;
+      let userMessage = 'Authentication failed. Please try again.';
 
-    if (
-      originalRequest.url &&
-      excludedRoutes.some((route) => originalRequest.url!.includes(route))
-    ) {
-      // For these specific routes, we don't want to retry or refresh the token.
-      // Just reject the promise with the original error.
-      return Promise.reject(err);
-    }
-
-    if (err.response?.status === 401 && !originalRequest._retry) {
-      originalRequest._retry = true;
-
-      if (isRefreshing) {
-        return new Promise((resolve, reject) => {
-          failedQueue.push({ resolve, reject, config: originalRequest });
-        });
+      // Parse error messages
+      if (typeof errorMessage === 'string') {
+        if (errorMessage.includes('verify your email address')) {
+          userMessage =
+            'Please verify your email address before signing in. Check your inbox for a verification code.';
+        } else if (errorMessage.includes('Invalid credentials')) {
+          userMessage = 'Invalid email or password. Please try again.';
+        } else if (errorMessage.includes('2FA')) {
+          userMessage = 'Two-factor authentication failed. Please try again.';
+        } else {
+          userMessage = errorMessage;
+        }
       }
 
-      try {
-        isRefreshing = true;
-        const newToken = await tryRefreshAccessToken();
+      // Show toast notification for 401 errors with throttling to prevent spam
+      toast.error(userMessage, { id: 'auth-error' });
 
-        if (!newToken) {
-          window.location.href = '/login';
-          return Promise.reject(err);
+      // For auth routes, don't attempt token refresh, just reject with the error
+      if (
+        originalRequest.url &&
+        EXCLUDED_REFRESH_ROUTES.some((route) => originalRequest.url!.includes(route))
+      ) {
+        console.log('🌐 Auth route 401, not retrying:', originalRequest.url);
+        return Promise.reject(err);
+      }
+
+      // For non-auth routes, attempt token refresh
+      if (!originalRequest._retry) {
+        console.log('🌐 401 error, attempting token refresh...');
+        originalRequest._retry = true;
+
+        if (isRefreshing) {
+          console.log('🌐 Already refreshing, queuing request...');
+          return new Promise((resolve, reject) => {
+            failedQueue.push({ resolve, reject, config: originalRequest });
+          });
         }
 
-        setAccessToken(newToken);
-        processQueue(null, newToken);
+        try {
+          isRefreshing = true;
+          console.log('Starting token refresh...');
+          const newToken = await tryRefreshAccessToken();
 
-        originalRequest.headers = originalRequest.headers || {};
-        originalRequest.headers['Authorization'] = `Bearer ${newToken}`;
+          if (!newToken) {
+            console.log('Token refresh failed, redirecting to login...');
+            setAccessToken(null);
+            window.location.href = '/login';
+            return Promise.reject(err);
+          }
 
-        return api(originalRequest);
-      } catch (refreshError: unknown) {
-        const axiosError = refreshError as AxiosError;
-        processQueue(axiosError, null);
-        window.location.href = '/login';
-        return Promise.reject(refreshError);
-      } finally {
-        isRefreshing = false;
+          console.log('Token refresh successful, retrying request...');
+          setAccessToken(newToken);
+          processQueue(null, newToken);
+
+          originalRequest.headers = originalRequest.headers || {};
+          originalRequest.headers['Authorization'] = `Bearer ${newToken}`;
+
+          return api(originalRequest);
+        } catch (refreshError: unknown) {
+          console.log('Token refresh error:', refreshError);
+          const axiosError = refreshError as AxiosError;
+          processQueue(axiosError, null);
+          setAccessToken(null);
+          window.location.href = '/login';
+          return Promise.reject(refreshError);
+        } finally {
+          isRefreshing = false;
+        }
       }
+    }
+
+    // Handle other error statuses with generic toast notifications and throttling
+    if (err.response?.status >= 500) {
+      toast.error('Server error. Please try again later.', { id: 'server-error' });
+    } else if (err.response?.status === 403) {
+      toast.error("Access denied. You don't have permission to perform this action.", {
+        id: 'access-denied',
+      });
+    } else if (err.response?.status === 404) {
+      toast.error('Resource not found.', { id: 'not-found' });
+    } else if (err.response?.status === 422) {
+      // Validation errors - let the component handle these specifically
+      console.log('Validation error:', err.response?.data);
+    } else if (err.response?.status >= 400 && err.response?.status < 500) {
+      // Other client errors - show generic message
+      toast.error('Request failed. Please check your input and try again.', { id: 'client-error' });
     }
 
     return Promise.reject(err);
   },
 );
+
+/**
+ * Clear the cached user timezone to force a refresh
+ * Call this when the user updates their timezone in settings
+ */
+export const clearCachedUserTimeZone = () => {
+  cachedUserTimeZone = null;
+};

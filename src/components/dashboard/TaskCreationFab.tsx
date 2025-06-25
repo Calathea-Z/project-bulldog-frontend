@@ -7,6 +7,7 @@ import { AiTaskModal, NewManualTaskModal } from '@/components';
 import { TaskCreationFabProps } from '@/types';
 import { useCreateActionItem } from '@/hooks';
 import { toast } from 'react-hot-toast';
+import { convertLocalToUTC } from '@/utils';
 
 export function TaskCreationFab({ expanded, setExpanded, onVoiceCapture }: TaskCreationFabProps) {
   const [taskModalOpen, setTaskModalOpen] = useState(false);
@@ -38,9 +39,10 @@ export function TaskCreationFab({ expanded, setExpanded, onVoiceCapture }: TaskC
     if (!newText.trim()) return;
 
     try {
+      const utcDueAt = newDueAt ? convertLocalToUTC(newDueAt) : null;
       await createActionItem.mutateAsync({
         text: newText.trim(),
-        dueAt: newDueAt ? newDueAt.toISOString() : null,
+        dueAt: utcDueAt,
         isDateOnly: false, // Default to false for manual tasks
         shouldRemind,
         reminderMinutesBeforeDue,
