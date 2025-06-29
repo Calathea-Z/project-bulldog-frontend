@@ -1,12 +1,11 @@
 'use client';
 
 import { X, Clock } from 'lucide-react';
-import { RefObject } from 'react';
+import { RefObject, useEffect } from 'react';
 import { NewActionItemFormProps } from '@/types';
 import { useDisableBodyScroll, useUserTimeZoneDisplay } from '@/hooks';
 import { ReminderToggle, BulldogDatePicker } from '@/components/ui';
 import { DEFAULT_REMINDER_MINUTES } from '@/utils';
-import { useUser } from '@/context/UserContext';
 
 export function NewManualTaskModal({
   inputRef,
@@ -26,6 +25,15 @@ export function NewManualTaskModal({
   onClose: () => void;
 }) {
   useDisableBodyScroll(true);
+
+  // Ensure newDueAt is set to now on open if not already set
+  useEffect(() => {
+    if (!newDueAt) {
+      setNewDueAt(new Date());
+    }
+    // Only run on mount
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const userTimeZoneDisplay = useUserTimeZoneDisplay();
 
@@ -76,14 +84,7 @@ export function NewManualTaskModal({
             </div>
 
             <div className="relative text-sm text-muted w-full">
-              <BulldogDatePicker
-                selected={newDueAt}
-                onChange={handleDueDateChange}
-                showTimeSelect
-                dateFormat="MMM d, yyyy h:mm aa"
-                placeholderText="Set due date"
-                minDate={new Date()}
-              />
+              <BulldogDatePicker selected={newDueAt} onChange={handleDueDateChange} />
               {userTimeZoneDisplay && (
                 <div className="mt-1 ml-2 text-xs text-zinc-500 dark:text-zinc-400 flex items-center gap-1">
                   <Clock className="h-3 w-3" />
