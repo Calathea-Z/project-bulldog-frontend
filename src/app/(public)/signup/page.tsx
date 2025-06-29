@@ -77,11 +77,14 @@ export default function SignUpPage() {
 
       const isGenericFallback = msg === fallback;
 
-      if (!isDuplicateEmail && !isGenericFallback) {
+      if (isDuplicateEmail) {
+        setError(msg); // Only inline error, no toast
+      } else if (!isGenericFallback) {
         toast.error(msg);
+        setError(msg);
+      } else {
+        setError(msg);
       }
-      // Only set inline error for duplicate email
-      setError(msg);
     } finally {
       setIsLoading(false);
     }
@@ -292,10 +295,6 @@ export default function SignUpPage() {
           </div>
         )}
       </motion.form>
-
-      <div className="absolute bottom-4 right-4">
-        <ThemeToggle />
-      </div>
     </main>
   );
 }
