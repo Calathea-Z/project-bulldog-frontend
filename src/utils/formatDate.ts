@@ -1,29 +1,59 @@
 import { getUserTimeZoneId } from './timezone';
+import { useEffect, useState } from 'react';
 
 /**
- * Format a UTC date string to the user's local timezone
- * @param utcDateString - UTC date string from the API
- * @param options - Formatting options
- * @returns Formatted date string in user's timezone
+ * SSR-safe date formatting: always uses UTC on the server, uses user timezone on the client.
  */
 export function formatDateInUserTimezone(
   utcDateString: string | null | undefined,
   options: Intl.DateTimeFormatOptions = {},
 ): string {
   if (!utcDateString) return 'No due date';
-
+  let timeZone = 'UTC';
+  if (typeof window !== 'undefined') {
+    try {
+      timeZone = getUserTimeZoneId();
+    } catch {}
+  }
   try {
     const utcDate = new Date(utcDateString);
-    const userTimeZoneId = getUserTimeZoneId();
-
     return new Intl.DateTimeFormat('en-US', {
-      timeZone: userTimeZoneId,
+      timeZone,
       ...options,
     }).format(utcDate);
   } catch (error) {
     console.error('Error formatting date:', error);
     return 'Invalid date';
   }
+}
+
+/**
+ * Client-only hook for timezone-aware formatting (hydration-safe)
+ */
+export function useFormatDateInUserTimezone(
+  utcDateString: string | null | undefined,
+  options: Intl.DateTimeFormatOptions = {},
+): string {
+  const [formatted, setFormatted] = useState('...');
+  useEffect(() => {
+    if (!utcDateString) {
+      setFormatted('No due date');
+      return;
+    }
+    try {
+      const timeZone = getUserTimeZoneId();
+      const utcDate = new Date(utcDateString);
+      setFormatted(
+        new Intl.DateTimeFormat('en-US', {
+          timeZone,
+          ...options,
+        }).format(utcDate),
+      );
+    } catch {
+      setFormatted('Invalid date');
+    }
+  }, [utcDateString, JSON.stringify(options)]);
+  return formatted;
 }
 
 /**
@@ -70,13 +100,13 @@ export function convertLocalToUTC(localDate: Date): string {
  */
 export function convertUTCToLocal(utcDateString: string | null | undefined): Date | null {
   if (!utcDateString) return null;
-
   try {
+    let timeZone = 'UTC';
+    if (typeof window !== 'undefined') {
+      timeZone = getUserTimeZoneId();
+    }
     const utcDate = new Date(utcDateString);
-    const userTimeZoneId = getUserTimeZoneId();
-
-    // Create a new date in the user's timezone
-    const localDate = new Date(utcDate.toLocaleString('en-US', { timeZone: userTimeZoneId }));
+    const localDate = new Date(utcDate.toLocaleString('en-US', { timeZone }));
     return localDate;
   } catch (error) {
     console.error('Error converting UTC to local:', error);

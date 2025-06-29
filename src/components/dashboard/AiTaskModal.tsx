@@ -1,28 +1,17 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
-import { Upload, X } from 'lucide-react';
+import { useState, useRef } from 'react';
+import { Upload, X, Loader2, Plus } from 'lucide-react';
 import { toast } from 'react-hot-toast';
-import DatePicker from 'react-datepicker';
-import 'react-datepicker/dist/react-datepicker.css';
-import { useAiGeneration, useDisableBodyScroll } from '@/hooks';
+import { useAiGeneration, useDisableBodyScroll, useUserTimeZoneDisplay } from '@/hooks';
 import { useAiReview } from '@/hooks/ai/useAiReview';
-import { TypewriterThinking, ReminderToggle } from '@/components';
+import { AiTaskEditor, TypewriterThinking } from '@/components';
 import { api } from '@/services';
-import { getUserTimeZoneId } from '@/utils/timezone';
 import { useUser } from '@/context/UserContext';
-import type {
-  AiSummaryWithTasksResponse,
-  AiTaskModalMode,
-  AiTaskModalProps,
-  UseAiReviewReturn,
-} from '@/types';
+import type { AiSummaryWithTasksResponse, AiTaskModalProps } from '@/types';
 
 export function AiTaskModal({ open, onClose, mode }: AiTaskModalProps) {
-  // —— AI generation hook ——
   const { aiInput, setAiInput, isAiLoading, generateTasks } = useAiGeneration();
-
-  // —— AI review hook ——
   const {
     editableTasks,
     setEditableTasks,
@@ -30,22 +19,10 @@ export function AiTaskModal({ open, onClose, mode }: AiTaskModalProps) {
     setReviewSummary,
     showReview,
     setShowReview,
-    handleTaskEdit,
-    handleTaskDelete,
-    handleTaskTimeEdit,
-    handleTaskDateOnlyToggle,
-    handleTaskReminderToggle,
-    handleTaskReminderMinutesChange,
     handleConfirmSave,
   } = useAiReview();
 
-  // —— shared UI state ——
   const [showSummary, setShowSummary] = useState(false);
-  const { user } = useUser();
-  const [userTimeZoneDisplay, setUserTimeZoneDisplay] = useState<string>('');
-  const [userTimeZone, setUserTimeZone] = useState<string>('');
-
-  // —— file‐upload state ——
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
@@ -53,32 +30,6 @@ export function AiTaskModal({ open, onClose, mode }: AiTaskModalProps) {
 
   useDisableBodyScroll(open);
 
-  // Set user timezone and display when user changes
-  useEffect(() => {
-    let tz = user?.timeZoneId || getUserTimeZoneId();
-    setUserTimeZone(tz);
-    if (!tz) return;
-    try {
-      const now = new Date();
-      const formatter = new Intl.DateTimeFormat('en', {
-        timeZone: tz,
-        timeZoneName: 'long',
-        hour: '2-digit',
-        minute: '2-digit',
-      });
-      const parts = formatter.formatToParts(now);
-      const tzName = parts.find((p) => p.type === 'timeZoneName')?.value || tz;
-      const utc = new Date(now.getTime() + now.getTimezoneOffset() * 60000);
-      const target = new Date(utc.toLocaleString('en-US', { timeZone: tz }));
-      const offset = (target.getTime() - utc.getTime()) / (1000 * 60 * 60);
-      const sign = offset >= 0 ? '+' : '';
-      setUserTimeZoneDisplay(`${tzName} (UTC${sign}${offset})`);
-    } catch {
-      setUserTimeZoneDisplay(tz);
-    }
-  }, [user]);
-
-  // —— common helpers ——
   const handleCancel = () => {
     onClose();
     setAiInput('');
@@ -89,7 +40,6 @@ export function AiTaskModal({ open, onClose, mode }: AiTaskModalProps) {
     setFileSummary('');
   };
 
-  // —— manual mode submission ——
   const handleManualSubmit = async () => {
     try {
       const { summary, actionItems } = await generateTasks();
@@ -108,38 +58,30 @@ export function AiTaskModal({ open, onClose, mode }: AiTaskModalProps) {
         }),
       );
       setShowReview(true);
-    } catch (error) {
-      // Error is already handled in generateTasks
-    }
+    } catch (error) {}
   };
 
-  // —— file mode upload ——
   const handleFileUpload = async () => {
-    console.log('📁 File upload started');
     if (!selectedFile) return;
+    if (selectedFile.size > 5_000_000) {
+      toast.error('Max file size is 5MB');
+      return;
+    }
+
     setIsUploading(true);
     setUploadError(null);
 
     try {
-      console.log('📁 Creating FormData');
       const formData = new FormData();
       formData.append('file', selectedFile);
-
-      console.log('📁 Making API call to /uploads');
       const resp = await api.post<AiSummaryWithTasksResponse>('/uploads', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
-          'X-User-TimeZone': userTimeZone,
         },
       });
 
-      console.log('📁 API response received:', resp.data);
+      if (!resp.data?.summary) throw new Error('No summary in response');
 
-      if (!resp.data?.summary) {
-        throw new Error('No summary in response');
-      }
-
-      // Update both summary and action items
       setFileSummary(resp.data.summary);
       setReviewSummary(resp.data.summary);
       setEditableTasks(
@@ -156,30 +98,24 @@ export function AiTaskModal({ open, onClose, mode }: AiTaskModalProps) {
         }),
       );
       setShowReview(true);
-      console.log('📁 File upload completed successfully');
     } catch (err) {
-      console.error('📁 File upload error:', err);
+      console.error(err);
       toast.error('Upload failed.');
       setUploadError('Upload failed. Please try again.');
     } finally {
-      console.log('📁 File upload finished, setting loading to false');
       setIsUploading(false);
     }
   };
 
-  // —— confirm & save ——
   const handleConfirm = async () => {
     try {
       await handleConfirmSave(mode === 'manual' ? aiInput : fileSummary);
       handleCancel();
-    } catch (error) {
-      // Error is already handled in handleConfirmSave
-    }
+    } catch (error) {}
   };
 
   const summaryRef = useRef<HTMLDivElement | null>(null);
 
-  // Handler for View Summary button that scrolls summary into view
   const handleViewSummary = () => {
     setShowSummary((prev) => {
       const next = !prev;
@@ -192,12 +128,25 @@ export function AiTaskModal({ open, onClose, mode }: AiTaskModalProps) {
     });
   };
 
+  const handleAddTask = () => {
+    setEditableTasks([
+      ...editableTasks,
+      {
+        text: '',
+        suggestedTime: null,
+        dueAt: null,
+        isDateOnly: false,
+        shouldRemind: false,
+        reminderMinutesBeforeDue: null,
+      },
+    ]);
+  };
+
   if (!open) return null;
 
   return (
     <div className="fixed inset-0 z-50 bg-black/60 flex flex-col">
       <div className="flex flex-col h-full w-full max-w-lg md:max-w-2xl lg:max-w-3xl mx-auto bg-white dark:bg-zinc-900 rounded-none md:rounded-2xl shadow-lg animate-slideUp">
-        {/* Header */}
         <div className="sticky top-0 z-10 bg-inherit p-4 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between">
           <span className="font-semibold text-lg text-zinc-900 dark:text-zinc-100">
             Create Tasks With AI
@@ -211,10 +160,8 @@ export function AiTaskModal({ open, onClose, mode }: AiTaskModalProps) {
           </button>
         </div>
 
-        {/* Scrollable Task List or Input UI */}
         <div className="flex-1 overflow-y-auto p-4">
           {!showReview ? (
-            // — Picking / generating —
             <>
               {mode === 'manual' ? (
                 <>
@@ -226,21 +173,24 @@ export function AiTaskModal({ open, onClose, mode }: AiTaskModalProps) {
                     onChange={(e) => setAiInput(e.target.value)}
                     disabled={isAiLoading}
                   />
-                  <div className="flex gap-2 mt-2">
-                    <button
-                      onClick={handleCancel}
-                      className="px-3 py-1 rounded bg-zinc-200 dark:bg-zinc-700 text-zinc-700 dark:text-zinc-200 text-xs hover:bg-zinc-300 dark:hover:bg-zinc-600 transition"
-                      disabled={isAiLoading}
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      onClick={handleManualSubmit}
-                      className="px-3 py-1 rounded bg-blue-600 text-white text-xs font-medium hover:bg-blue-700 transition disabled:opacity-50"
-                      disabled={isAiLoading || !aiInput.trim()}
-                    >
-                      Generate Tasks
-                    </button>
+                  <div className="flex flex-col gap-3 mt-2">
+                    <div className="flex gap-2">
+                      <button
+                        onClick={handleCancel}
+                        className="px-3 py-1 rounded bg-zinc-200 dark:bg-zinc-700 text-zinc-700 dark:text-zinc-200 text-xs hover:bg-zinc-300 dark:hover:bg-zinc-600 transition"
+                        disabled={isAiLoading}
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={handleManualSubmit}
+                        className="px-3 py-1 rounded bg-blue-600 text-white text-xs font-medium hover:bg-blue-700 transition disabled:opacity-50 flex items-center gap-2"
+                        disabled={isAiLoading || !aiInput.trim()}
+                      >
+                        {isAiLoading && <Loader2 className="w-3 h-3 animate-spin" />} Generate Tasks
+                      </button>
+                    </div>
+                    {(isUploading || isAiLoading) && <TypewriterThinking />}
                   </div>
                 </>
               ) : (
@@ -265,94 +215,53 @@ export function AiTaskModal({ open, onClose, mode }: AiTaskModalProps) {
                     </label>
                   </div>
                   {uploadError && <p className="text-red-500 text-sm text-center">{uploadError}</p>}
-                  <div className="flex gap-2 mt-2">
-                    <button
-                      onClick={handleCancel}
-                      className="px-3 py-1 rounded bg-zinc-200 dark:bg-zinc-700 text-zinc-700 dark:text-zinc-200 text-xs hover:bg-zinc-300 dark:hover:bg-zinc-600 transition"
-                      disabled={isUploading}
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      onClick={handleFileUpload}
-                      className="px-3 py-1 rounded bg-blue-600 text-white text-xs font-medium hover:bg-blue-700 transition disabled:opacity-50"
-                      disabled={isUploading || !selectedFile}
-                    >
-                      Upload & Generate Tasks
-                    </button>
+                  <div className="flex flex-col gap-3 mt-2">
+                    <div className="flex gap-2">
+                      <button
+                        onClick={handleCancel}
+                        className="px-3 py-1 rounded bg-zinc-200 dark:bg-zinc-700 text-zinc-700 dark:text-zinc-200 text-xs hover:bg-zinc-300 dark:hover:bg-zinc-600 transition"
+                        disabled={isUploading}
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={handleFileUpload}
+                        className="px-3 py-1 rounded bg-blue-600 text-white text-xs font-medium hover:bg-blue-700 transition disabled:opacity-50 flex items-center gap-2"
+                        disabled={isUploading || !selectedFile}
+                      >
+                        {isUploading && <Loader2 className="w-3 h-3 animate-spin" />} Upload &
+                        Generate Tasks
+                      </button>
+                    </div>
+                    {(isUploading || isAiLoading) && <TypewriterThinking />}
                   </div>
                 </>
               )}
-              {(isUploading || isAiLoading) && <TypewriterThinking />}
             </>
           ) : (
-            // --- Review & Edit UI (tasks list) ---
             <div>
-              <div className="font-medium mb-2">Review & Edit Tasks</div>
-              <ul className="space-y-2 mb-4 pr-2">
-                {editableTasks.length === 0 && (
-                  <li className="text-sm text-muted text-center italic">No tasks remaining</li>
-                )}
-                {editableTasks.map((t, i) => (
-                  <li key={i} className="flex flex-col gap-2">
-                    <div className="flex items-center gap-2">
-                      <textarea
-                        value={t.text}
-                        onChange={(e) => handleTaskEdit(i, e.target.value)}
-                        className="flex-1 border border-zinc-300 dark:border-zinc-700 rounded px-3 py-2 text-sm bg-white dark:bg-zinc-800 resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[40px] max-h-[160px] overflow-y-auto"
-                        rows={2}
-                        aria-label={`Edit action item ${i + 1}`}
-                      />
-                      <button
-                        onClick={() => handleTaskDelete(i)}
-                        className="text-red-500 hover:underline text-xs"
-                      >
-                        Delete
-                      </button>
-                    </div>
-                    <div className="relative text-sm text-muted w-full">
-                      <span className="absolute left-3 top-1/2 -translate-y-1/2">📅</span>
-                      <DatePicker
-                        selected={t.suggestedTime ? new Date(t.suggestedTime) : null}
-                        onChange={(date) => handleTaskTimeEdit(i, date)}
-                        showTimeSelect={!t.isDateOnly}
-                        dateFormat={t.isDateOnly ? 'MMM d, yyyy' : 'MMM d, yyyy h:mm aa'}
-                        placeholderText="Set due date"
-                        minDate={new Date()}
-                        className="w-full pl-9 pr-3 py-2 rounded-md border border-accent bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                      />
-                      {userTimeZoneDisplay && (
-                        <div className="mt-1 ml-2 text-xs text-zinc-500 dark:text-zinc-400">
-                          Times shown in your timezone:{' '}
-                          <span className="font-medium">{userTimeZoneDisplay}</span>
-                        </div>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-2 mt-1 ml-1">
-                      <input
-                        type="checkbox"
-                        id={`all-day-${i}`}
-                        checked={t.isDateOnly}
-                        onChange={(e) => handleTaskDateOnlyToggle(i, e.target.checked)}
-                        className="accent-primary"
-                      />
-                      <label htmlFor={`all-day-${i}`} className="text-sm text-muted">
-                        All-day
-                      </label>
-                    </div>
-
-                    {/* Reminder Toggle */}
-                    <ReminderToggle
-                      shouldRemind={t.shouldRemind ?? false}
-                      onShouldRemindChange={(value) => handleTaskReminderToggle(i, value)}
-                      reminderMinutesBeforeDue={t.reminderMinutesBeforeDue ?? null}
-                      onReminderMinutesChange={(value) => handleTaskReminderMinutesChange(i, value)}
-                      disabled={!t.suggestedTime}
-                      className="mt-2"
-                    />
-                  </li>
-                ))}
-              </ul>
+              <div className="font-medium mb-2 flex items-center justify-between">
+                <span>Review & Edit Tasks</span>
+                <button
+                  onClick={handleAddTask}
+                  className="text-xs text-blue-600 hover:underline flex items-center gap-1"
+                >
+                  <Plus className="w-4 h-4" /> Add Task
+                </button>
+              </div>
+              <AiTaskEditor
+                tasks={editableTasks}
+                onEdit={(index, updates) => {
+                  const updated = [...editableTasks];
+                  updated[index] = { ...editableTasks[index], ...updates };
+                  setEditableTasks(updated);
+                }}
+                onDelete={(index) => {
+                  const updated = [...editableTasks];
+                  updated.splice(index, 1);
+                  setEditableTasks(updated);
+                }}
+              />
               {showSummary && (
                 <div
                   ref={summaryRef}
@@ -365,7 +274,6 @@ export function AiTaskModal({ open, onClose, mode }: AiTaskModalProps) {
           )}
         </div>
 
-        {/* Sticky Footer */}
         {showReview && (
           <div className="sticky bottom-0 z-10 bg-inherit p-4 border-t border-zinc-200 dark:border-zinc-800 flex flex-col gap-2 pb-20">
             <button
@@ -391,20 +299,6 @@ export function AiTaskModal({ open, onClose, mode }: AiTaskModalProps) {
             </div>
           </div>
         )}
-
-        <style jsx global>{`
-          @keyframes slideUp {
-            from {
-              transform: translateY(100%);
-            }
-            to {
-              transform: translateY(0);
-            }
-          }
-          .animate-slideUp {
-            animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-          }
-        `}</style>
       </div>
     </div>
   );

@@ -102,3 +102,29 @@ function getTimeZoneOffset(timeZoneId: string): string {
 export function deduplicateTimeZones<T extends { id: string }>(timeZones: T[]): T[] {
   return Array.from(new Map(timeZones.map((tz) => [tz.id, tz])).values());
 }
+
+// Centralized Windows to IANA mapping for common US zones
+export const windowsToIana: Record<string, string> = {
+  'Pacific Standard Time': 'America/Los_Angeles',
+  'Mountain Standard Time': 'America/Denver',
+  'Central Standard Time': 'America/Chicago',
+  'Eastern Standard Time': 'America/New_York',
+  UTC: 'UTC',
+};
+
+export function toIana(tz: string): string {
+  return windowsToIana[tz] || tz;
+}
+
+/**
+ * Hydration-safe: returns IANA timezone if possible, else 'UTC'.
+ */
+export function getHydratedTimeZoneId(tz?: string): string {
+  if (tz) return toIana(tz);
+  if (typeof window !== 'undefined') {
+    try {
+      return toIana(Intl.DateTimeFormat().resolvedOptions().timeZone);
+    } catch {}
+  }
+  return 'UTC';
+}
