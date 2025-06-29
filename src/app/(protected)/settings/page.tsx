@@ -1,8 +1,9 @@
 'use client';
 
 import { useRef, useEffect, useState } from 'react';
-import { useUserSettings } from '@/hooks';
+import { useUserSettings, useUserTimeZoneDisplay } from '@/hooks';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Clock } from 'lucide-react';
 
 export default function SettingsPage() {
   const {
@@ -14,6 +15,8 @@ export default function SettingsPage() {
     setSelectedTimeZone,
     updateTimeZone,
   } = useUserSettings();
+
+  const userTimeZoneDisplay = useUserTimeZoneDisplay();
 
   const timezoneRef = useRef<HTMLDivElement | null>(null);
   const [showBanner, setShowBanner] = useState(false);
@@ -84,6 +87,14 @@ export default function SettingsPage() {
         <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
           Set your timezone to ensure times are interpreted correctly when uploading documents.
         </p>
+
+        {/* Local Timezone Display */}
+        <div className="flex items-center gap-2 mb-4 p-3 bg-gray-50 dark:bg-zinc-700 rounded-md">
+          <Clock className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+          <span className="text-xs text-gray-600 dark:text-gray-400">
+            Your local time zone: {userTimeZoneDisplay}
+          </span>
+        </div>
 
         <div className="space-y-4">
           <div>

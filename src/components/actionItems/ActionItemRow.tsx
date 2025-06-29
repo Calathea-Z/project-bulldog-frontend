@@ -3,9 +3,7 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'react-hot-toast';
-import DatePicker from 'react-datepicker';
-import 'react-datepicker/dist/react-datepicker.css';
-import { Check, Pencil, Trash2, Bell } from 'lucide-react';
+import { Check, Pencil, Trash2, Bell, Clock } from 'lucide-react';
 import TextareaAutosize from 'react-textarea-autosize';
 import { ActionItem } from '@/types';
 import {
@@ -19,7 +17,7 @@ import {
   getMutationErrorMessage,
 } from '@/utils';
 import { UseMutationResult } from '@tanstack/react-query';
-import { ReminderToggle } from '@/components/ui';
+import { ReminderToggle, BulldogDatePicker } from '@/components/ui';
 
 interface ActionItemRowProps {
   item: ActionItem;
@@ -65,10 +63,8 @@ export function ActionItemRow({
         ? convertToUtcDate(editDueAt).toISOString()
         : convertLocalToUTC(editDueAt)
       : null;
-
     const normalizedCurrentDueAt = normalizeDateString(currentDueAt);
     const normalizedOriginalDueAt = normalizeDateString(item.dueAt || null);
-
     return (
       editText !== item.text ||
       normalizedCurrentDueAt !== normalizedOriginalDueAt ||
@@ -94,47 +90,26 @@ export function ActionItemRow({
   const handleToggleClick = () => handleToggle(item.id);
 
   const handleSave = useCallback(() => {
+    // Only block save if text is empty
     if (!editText.trim()) {
       toast.error('Text cannot be empty');
       return;
     }
-
     // Prevent multiple simultaneous mutations
     if (updateActionItem.isPending) {
       return;
     }
-
-    // Check if anything has actually changed using a more robust comparison
+    // Only save if something actually changed
+    if (!isDirty) {
+      setIsEditing(false);
+      return;
+    }
     const currentDueAt = editDueAt
       ? isDateOnly
         ? convertToUtcDate(editDueAt).toISOString()
         : convertLocalToUTC(editDueAt)
       : null;
-
-    // Normalize the original dueAt for comparison
-    const originalDueAt = item.dueAt || null;
-
-    const hasTextChanged = editText !== item.text;
-    const hasDueAtChanged =
-      normalizeDateString(currentDueAt) !== normalizeDateString(originalDueAt);
-    const hasDateOnlyChanged = isDateOnly !== (item.isDateOnly ?? false);
-    const hasRemindChanged = shouldRemind !== (item.shouldRemind ?? false);
-    const hasReminderTimeChanged =
-      reminderMinutesBeforeDue !== (item.reminderMinutesBeforeDue ?? null);
-
-    if (
-      !hasTextChanged &&
-      !hasDueAtChanged &&
-      !hasDateOnlyChanged &&
-      !hasRemindChanged &&
-      !hasReminderTimeChanged
-    ) {
-      setIsEditing(false);
-      return;
-    }
-
     setIsEditing(false);
-
     updateActionItem.mutate(
       {
         id: item.id,
@@ -151,7 +126,6 @@ export function ActionItemRow({
           toast.success('Updated successfully');
         },
         onError: (error) => {
-          // Reopen edit mode on error so user can retry
           setIsEditing(true);
           const errorMessage = getMutationErrorMessage(
             error,
@@ -170,11 +144,7 @@ export function ActionItemRow({
     item.id,
     shouldRemind,
     reminderMinutesBeforeDue,
-    item.text,
-    item.dueAt,
-    item.isDateOnly,
-    item.shouldRemind,
-    item.reminderMinutesBeforeDue,
+    isDirty,
   ]);
 
   const handleCancel = useCallback(() => {
@@ -259,24 +229,21 @@ export function ActionItemRow({
               </div>
 
               <div className="relative text-sm text-muted w-full">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2">📅</span>
-                <DatePicker
+                <BulldogDatePicker
                   selected={editDueAt}
                   onChange={(date) => setEditDueAt(date)}
                   showTimeSelect={!isDateOnly}
                   dateFormat={isDateOnly ? 'MMM d, yyyy' : 'MMM d, yyyy h:mm aa'}
                   placeholderText="Set due date"
                   minDate={new Date()}
-                  calendarClassName="react-datepicker"
-                  popperPlacement="bottom-start"
-                  className="w-full pl-9 pr-3 py-2 rounded-md border border-accent bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                   timeIntervals={15}
                   timeCaption="Time"
                   isClearable
                   aria-label={`Select due date for task "${item.text}"${isDateOnly ? ' (all-day)' : ' with time'}`}
                 />
                 {userTimeZoneDisplay && (
-                  <div className="mt-1 ml-2 text-xs text-zinc-500 dark:text-zinc-400">
+                  <div className="mt-1 ml-2 text-xs text-zinc-500 dark:text-zinc-400 flex items-center gap-1">
+                    <Clock className="h-3 w-3" />
                     Your local time zone: <span className="font-medium">{userTimeZoneDisplay}</span>
                   </div>
                 )}

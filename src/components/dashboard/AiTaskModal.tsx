@@ -1,22 +1,16 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { Upload, X } from 'lucide-react';
+import { Upload, X, Clock } from 'lucide-react';
 import { toast } from 'react-hot-toast';
-import DatePicker from 'react-datepicker';
-import 'react-datepicker/dist/react-datepicker.css';
 import { useAiGeneration, useDisableBodyScroll } from '@/hooks';
 import { useAiReview } from '@/hooks/ai/useAiReview';
-import { TypewriterThinking, ReminderToggle } from '@/components';
+import { TypewriterThinking, ReminderToggle, BulldogDatePicker } from '@/components';
 import { api } from '@/services';
 import { getUserTimeZoneId } from '@/utils/timezone';
+import { toIana } from '@/utils/timezone';
 import { useUser } from '@/context/UserContext';
-import type {
-  AiSummaryWithTasksResponse,
-  AiTaskModalMode,
-  AiTaskModalProps,
-  UseAiReviewReturn,
-} from '@/types';
+import type { AiSummaryWithTasksResponse, AiTaskModalProps } from '@/types';
 
 export function AiTaskModal({ open, onClose, mode }: AiTaskModalProps) {
   // —— AI generation hook ——
@@ -58,23 +52,24 @@ export function AiTaskModal({ open, onClose, mode }: AiTaskModalProps) {
     let tz = user?.timeZoneId || getUserTimeZoneId();
     setUserTimeZone(tz);
     if (!tz) return;
+    const ianaTz = toIana(tz);
     try {
       const now = new Date();
       const formatter = new Intl.DateTimeFormat('en', {
-        timeZone: tz,
+        timeZone: ianaTz,
         timeZoneName: 'long',
         hour: '2-digit',
         minute: '2-digit',
       });
       const parts = formatter.formatToParts(now);
-      const tzName = parts.find((p) => p.type === 'timeZoneName')?.value || tz;
+      const tzName = parts.find((p) => p.type === 'timeZoneName')?.value || ianaTz;
       const utc = new Date(now.getTime() + now.getTimezoneOffset() * 60000);
-      const target = new Date(utc.toLocaleString('en-US', { timeZone: tz }));
+      const target = new Date(utc.toLocaleString('en-US', { timeZone: ianaTz }));
       const offset = (target.getTime() - utc.getTime()) / (1000 * 60 * 60);
       const sign = offset >= 0 ? '+' : '';
       setUserTimeZoneDisplay(`${tzName} (UTC${sign}${offset})`);
     } catch {
-      setUserTimeZoneDisplay(tz);
+      setUserTimeZoneDisplay('UTC');
     }
   }, [user]);
 
@@ -132,8 +127,6 @@ export function AiTaskModal({ open, onClose, mode }: AiTaskModalProps) {
           'X-User-TimeZone': userTimeZone,
         },
       });
-
-      console.log('📁 API response received:', resp.data);
 
       if (!resp.data?.summary) {
         throw new Error('No summary in response');
@@ -311,18 +304,17 @@ export function AiTaskModal({ open, onClose, mode }: AiTaskModalProps) {
                       </button>
                     </div>
                     <div className="relative text-sm text-muted w-full">
-                      <span className="absolute left-3 top-1/2 -translate-y-1/2">📅</span>
-                      <DatePicker
+                      <BulldogDatePicker
                         selected={t.suggestedTime ? new Date(t.suggestedTime) : null}
                         onChange={(date) => handleTaskTimeEdit(i, date)}
                         showTimeSelect={!t.isDateOnly}
                         dateFormat={t.isDateOnly ? 'MMM d, yyyy' : 'MMM d, yyyy h:mm aa'}
                         placeholderText="Set due date"
                         minDate={new Date()}
-                        className="w-full pl-9 pr-3 py-2 rounded-md border border-accent bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                       />
                       {userTimeZoneDisplay && (
-                        <div className="mt-1 ml-2 text-xs text-zinc-500 dark:text-zinc-400">
+                        <div className="mt-1 ml-2 text-xs text-zinc-500 dark:text-zinc-400 flex items-center gap-1">
+                          <Clock className="h-3 w-3" />
                           Times shown in your timezone:{' '}
                           <span className="font-medium">{userTimeZoneDisplay}</span>
                         </div>

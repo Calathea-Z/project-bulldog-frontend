@@ -1,37 +1,42 @@
 import { useEffect, useMemo, useState } from 'react';
-import { getUserTimeZoneId } from '@/utils/timezone';
+import { getUserTimeZoneId, toIana } from '@/utils/timezone';
 import { useUser } from '@/context/UserContext';
 
 export function useUserTimeZoneDisplay(): string {
   const { user } = useUser();
-  const [display, setDisplay] = useState('');
+  const [display, setDisplay] = useState('...'); // Show ... until hydrated
+  const [hydrated, setHydrated] = useState(false);
 
   const timeZoneId = useMemo(() => user?.timeZoneId || getUserTimeZoneId(), [user]);
 
   useEffect(() => {
-    if (!timeZoneId) return;
-
+    setHydrated(true);
+    if (!timeZoneId) {
+      setDisplay('UTC');
+      return;
+    }
+    const ianaTz = toIana(timeZoneId);
     try {
       const now = new Date();
       const formatter = new Intl.DateTimeFormat('en', {
-        timeZone: timeZoneId,
+        timeZone: ianaTz,
         timeZoneName: 'long',
         hour: '2-digit',
         minute: '2-digit',
       });
       const parts = formatter.formatToParts(now);
-      const tzName = parts.find((p) => p.type === 'timeZoneName')?.value || timeZoneId;
+      const tzName = parts.find((p) => p.type === 'timeZoneName')?.value || ianaTz;
       const utc = new Date(now.getTime() + now.getTimezoneOffset() * 60000);
-      const target = new Date(utc.toLocaleString('en-US', { timeZone: timeZoneId }));
+      const target = new Date(utc.toLocaleString('en-US', { timeZone: ianaTz }));
       const offset = (target.getTime() - utc.getTime()) / (1000 * 60 * 60);
-      const sign = offset >= 0 ? '+' : '';
-      const offsetStr = (Math.round(offset * 100) / 100).toString();
-      setDisplay(`${tzName} (UTC${sign}${offsetStr})`);
+      // Round to nearest half hour
+      const roundedOffset = Math.round(offset * 2) / 2;
+      const sign = roundedOffset >= 0 ? '+' : '';
+      setDisplay(`${tzName} (UTC${sign}${roundedOffset})`);
     } catch (err) {
-      console.error(`Invalid timezone '${timeZoneId}':`, err);
-      setDisplay(timeZoneId);
+      setDisplay('UTC');
     }
   }, [timeZoneId]);
 
-  return display || 'Unknown time zone';
+  return hydrated ? display : '...';
 }

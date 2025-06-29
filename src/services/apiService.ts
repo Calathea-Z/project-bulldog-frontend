@@ -97,8 +97,6 @@ const tryRefreshAccessToken = async (): Promise<string | null> => {
  * Request interceptor to attach the access token and timezone to outgoing requests
  */
 api.interceptors.request.use(async (config) => {
-  console.log('🌐 API Request:', { url: config.url, method: config.method });
-
   if (accessToken && config.headers) {
     config.headers['Authorization'] = `Bearer ${accessToken}`;
   }
@@ -123,7 +121,6 @@ api.interceptors.request.use(async (config) => {
     }
   }
 
-  console.log('🌐 Request config prepared');
   return config;
 });
 
@@ -136,7 +133,6 @@ api.interceptors.request.use(async (config) => {
  */
 api.interceptors.response.use(
   (res) => {
-    console.log('🌐 API Response:', { url: res.config.url, status: res.status });
     return res;
   },
   async (err) => {

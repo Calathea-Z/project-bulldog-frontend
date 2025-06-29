@@ -1,14 +1,11 @@
 'use client';
 
-import { X } from 'lucide-react';
-import DatePicker from 'react-datepicker';
-import 'react-datepicker/dist/react-datepicker.css';
-import { RefObject, useEffect, useState } from 'react';
+import { X, Clock } from 'lucide-react';
+import { RefObject } from 'react';
 import { NewActionItemFormProps } from '@/types';
-import { useDisableBodyScroll } from '@/hooks';
-import { ReminderToggle } from '@/components/ui';
+import { useDisableBodyScroll, useUserTimeZoneDisplay } from '@/hooks';
+import { ReminderToggle, BulldogDatePicker } from '@/components/ui';
 import { DEFAULT_REMINDER_MINUTES } from '@/utils';
-import { getUserTimeZoneId } from '@/utils/timezone';
 import { useUser } from '@/context/UserContext';
 
 export function NewManualTaskModal({
@@ -30,33 +27,7 @@ export function NewManualTaskModal({
 }) {
   useDisableBodyScroll(true);
 
-  const { user } = useUser();
-  const [userTimeZone, setUserTimeZone] = useState<string>('');
-  const [userTimeZoneDisplay, setUserTimeZoneDisplay] = useState<string>('');
-
-  useEffect(() => {
-    let tz = user?.timeZoneId || getUserTimeZoneId();
-    setUserTimeZone(tz);
-    if (!tz) return;
-    try {
-      const now = new Date();
-      const formatter = new Intl.DateTimeFormat('en', {
-        timeZone: tz,
-        timeZoneName: 'long',
-        hour: '2-digit',
-        minute: '2-digit',
-      });
-      const parts = formatter.formatToParts(now);
-      const tzName = parts.find((p) => p.type === 'timeZoneName')?.value || tz;
-      const utc = new Date(now.getTime() + now.getTimezoneOffset() * 60000);
-      const target = new Date(utc.toLocaleString('en-US', { timeZone: tz }));
-      const offset = (target.getTime() - utc.getTime()) / (1000 * 60 * 60);
-      const sign = offset >= 0 ? '+' : '';
-      setUserTimeZoneDisplay(`${tzName} (UTC${sign}${offset})`);
-    } catch {
-      setUserTimeZoneDisplay(tz);
-    }
-  }, [user]);
+  const userTimeZoneDisplay = useUserTimeZoneDisplay();
 
   const handleSave = async () => {
     await handleAdd();
@@ -105,18 +76,17 @@ export function NewManualTaskModal({
             </div>
 
             <div className="relative text-sm text-muted w-full">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2">📅</span>
-              <DatePicker
+              <BulldogDatePicker
                 selected={newDueAt}
                 onChange={handleDueDateChange}
                 showTimeSelect
                 dateFormat="MMM d, yyyy h:mm aa"
                 placeholderText="Set due date"
                 minDate={new Date()}
-                className="w-full pl-9 pr-3 py-2 rounded-md border border-accent bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary"
               />
               {userTimeZoneDisplay && (
-                <div className="mt-1 ml-2 text-xs text-zinc-500 dark:text-zinc-400">
+                <div className="mt-1 ml-2 text-xs text-zinc-500 dark:text-zinc-400 flex items-center gap-1">
+                  <Clock className="h-3 w-3" />
                   Times shown in your timezone:{' '}
                   <span className="font-medium">{userTimeZoneDisplay}</span>
                 </div>

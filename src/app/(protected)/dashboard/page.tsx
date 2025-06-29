@@ -10,8 +10,8 @@ import {
   LogoutButton,
   PrivacyNotice,
   AiTaskModal,
-  PullIndicator,
 } from '@/components';
+import { BulldogDatePicker } from '@/components/ui/BulldogDatePicker';
 import {
   useActionItems,
   useToggleActionItemDone,
@@ -28,6 +28,9 @@ export default function DashboardPage() {
   const [showAiInput, setShowAiInput] = useState(false);
   const [fabExpanded, setFabExpanded] = useState(false);
 
+  // Track if any modal/drawer is open
+  const isModalOpen = showAiInput; // Add other modal states here if needed
+
   const { data: items = [], isLoading, refetch } = useActionItems();
 
   const toggleDone = useToggleActionItemDone();
@@ -39,7 +42,11 @@ export default function DashboardPage() {
     toast.success(DASHBOARD_STRINGS.REFRESH_SUCCESS_MESSAGE);
   };
 
-  const { isPulling, isRefreshing, pullPercent, offsetY } = usePullToRefresh(handleRefresh);
+  // Only enable pull-to-refresh if no modal is open
+  const { isPulling, isRefreshing, pullPercent, offsetY } = usePullToRefresh(
+    handleRefresh,
+    !isModalOpen,
+  );
 
   // Debounced refetch to handle rapid focus events efficiently
   const debouncedRefetch = useDebouncedCallback(() => {
