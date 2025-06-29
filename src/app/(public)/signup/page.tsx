@@ -19,7 +19,6 @@ export default function SignUpPage() {
   const [email, setEmail] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [password, setPassword] = useState('');
-  const [phoneNumber, setPhoneNumber] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -44,24 +43,11 @@ export default function SignUpPage() {
     setError('');
 
     try {
-      let formattedPhoneNumber = phoneNumber;
-      if (phoneNumber.trim()) {
-        const digitsOnly = phoneNumber.replace(/\D/g, '');
-        if (digitsOnly.length === 10) {
-          formattedPhoneNumber = `+1${digitsOnly}`;
-        } else {
-          toast.error('Please enter a valid 10-digit US phone number');
-          setIsLoading(false);
-          return;
-        }
-      }
-
       const result = await api
         .post('/auth/register', {
           email,
           displayName,
           password,
-          phoneNumber: formattedPhoneNumber,
         })
         .then((res) => res.data);
 
@@ -180,19 +166,6 @@ export default function SignUpPage() {
               </button>
             </div>
 
-            <div className="space-y-1">
-              <input
-                id="phoneNumber"
-                type="tel"
-                placeholder="555-555-5555 (Optional)"
-                className="w-full p-3 rounded-md bg-zinc-800 border border-zinc-700 text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900"
-                value={phoneNumber}
-                onChange={(e) => setPhoneNumber(e.target.value)}
-                disabled={isLoading}
-                aria-label="Phone number (optional)"
-              />
-            </div>
-
             <motion.button
               whileTap={{ scale: 0.97 }}
               type="submit"
@@ -232,7 +205,6 @@ export default function SignUpPage() {
                 setEmail('');
                 setDisplayName('');
                 setPassword('');
-                setPhoneNumber('');
                 setError('');
               }}
               className="w-full bg-zinc-800 border border-zinc-700 text-zinc-100 py-2 rounded-md hover:border-primary transition"
