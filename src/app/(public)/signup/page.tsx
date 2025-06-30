@@ -273,7 +273,7 @@ export default function SignUpPage() {
                 Please check your inbox and click the link to activate your account.
               </p>
               <p className="text-zinc-500 text-xs">
-                Didn't get it? Check your spam folder or try logging in to resend.
+                Didn&apos;t get it? Check your spam folder or try logging in to resend.
               </p>
             </div>
             <motion.button
@@ -285,7 +285,7 @@ export default function SignUpPage() {
               </Link>
             </motion.button>
             <div className="text-center text-xs text-zinc-500 mt-2">
-              You'll be redirected shortly...
+              You&apos;ll be redirected shortly...
             </div>
           </motion.div>
         )}
