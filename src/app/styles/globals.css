@@ -35,3 +35,9 @@ html.light {
 .animate-slideUp {
   animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
+
+input:-webkit-autofill,
+input:-moz-autofill,
+input:autofill {
+  @apply bg-zinc-800 text-white border-cyan-400;
+}

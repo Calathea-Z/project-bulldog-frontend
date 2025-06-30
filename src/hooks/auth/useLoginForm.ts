@@ -64,7 +64,9 @@ export function useLoginForm() {
     setError('');
 
     try {
-      const data = await api.post('/auth/login', { email, password }).then((res) => res.data);
+      const data = await api
+        .post('/auth/login', { email, password }, { suppressErrorToast: true } as any)
+        .then((res) => res.data);
       setPassword('');
 
       if (data.auth) {

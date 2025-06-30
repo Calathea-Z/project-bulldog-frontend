@@ -2,11 +2,13 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import icon512 from '../../../../public/icon-512.png';
+import icon512rounded from '../../../../public/icon-512-rounded.png';
 import { Eye, EyeOff } from 'lucide-react';
+import { FormErrorBox } from '@/components/ui/FormErrorBox';
 import { useRedirectIfAuthenticated, useLoginForm } from '@/hooks';
-import { LoadingScreen, ThemeToggle } from '@/components';
+import { ThemeToggle } from '@/components';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useState } from 'react';
 
 export default function LoginPage() {
   useRedirectIfAuthenticated();
@@ -34,25 +36,34 @@ export default function LoginPage() {
     handleResendVerificationEmail,
   } = useLoginForm();
 
-  // Determine current step for animation transitions
+  // Soft inline validation state
+  const [emailTouched, setEmailTouched] = useState(false);
+  const [passwordTouched, setPasswordTouched] = useState(false);
+  const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  const passwordValid = password.length >= 8;
+  const formValid = emailValid && passwordValid;
+
   const step = showMethodSelection ? 'method' : showOtpInput ? 'otp' : 'login';
 
   return (
-    <main className="min-h-screen bg-background text-text flex items-center justify-center p-4 relative">
-      {isLoading && <LoadingScreen />}
-
-      <form
+    <main className="min-h-screen bg-gradient-to-b from-neutral-900 via-neutral-950 to-black text-zinc-100 flex items-center justify-center p-4 relative">
+      <motion.form
         onSubmit={showOtpInput ? handleVerifyOtp : handleLogin}
-        className="w-full max-w-sm bg-surface shadow-xl rounded-xl p-6 space-y-4 border border-primary"
+        className="w-full max-w-md bg-zinc-900 border border-zinc-700 shadow-lg rounded-2xl p-8 space-y-6"
         aria-busy={isLoading}
+        initial={{ opacity: 0, scale: 0.98 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }} // easeOutExpo
       >
-        {/* Logo and Header */}
-        <div className="flex justify-center mb-4 rounded-md">
-          <Image src={icon512} alt="Bulldog Logo" width={64} height={64} priority />
-        </div>
-
-        <h1 className="text-2xl font-bold text-center text-primary">Welcome Back</h1>
-        <p className="text-sm text-secondary text-center">
+        <Image
+          src="/bulldog-brand-header-embedded.svg"
+          alt="Bulldog Tasks brand header"
+          width={500}
+          height={100}
+          className="mb-6 mx-auto"
+          priority
+        />
+        <p className="text-sm text-zinc-400 tracking-wide text-center mb-4">
           {showMethodSelection
             ? 'Choose how to receive your verification code'
             : showOtpInput
@@ -60,7 +71,6 @@ export default function LoginPage() {
               : 'Sign in with your email and password to continue.'}
         </p>
 
-        {/* Animated Form Content */}
         <AnimatePresence mode="wait">
           <motion.div
             key={step}
@@ -68,8 +78,8 @@ export default function LoginPage() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
             transition={{ duration: 0.2 }}
+            className="space-y-4"
           >
-            {/* Email/Password Fields - Only shown during initial login */}
             {!twoFactorData && (
               <>
                 <div className="space-y-1">
@@ -81,14 +91,20 @@ export default function LoginPage() {
                     type="email"
                     required
                     placeholder="your@email.com"
-                    className="w-full p-3 rounded bg-background border border-accent text-text placeholder:text-secondary focus:outline-none focus:ring-2 focus:ring-primary"
+                    className="w-full p-3 rounded-md bg-zinc-800 border border-zinc-700 text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
+                    onBlur={() => setEmailTouched(true)}
                     disabled={isLoading}
                     aria-invalid={!!error && error.toLowerCase().includes('email')}
+                    aria-label="Email address"
                   />
+                  {emailTouched && !emailValid && (
+                    <p className="text-xs text-destructive mt-1">
+                      Please enter a valid email address.
+                    </p>
+                  )}
                 </div>
-
                 <div className="relative space-y-1">
                   <label htmlFor="password" className="sr-only">
                     Password
@@ -97,18 +113,27 @@ export default function LoginPage() {
                     id="password"
                     type={showPassword ? 'text' : 'password'}
                     required
-                    placeholder="Password"
-                    className="w-full p-3 rounded bg-background border border-accent text-text placeholder:text-secondary focus:outline-none focus:ring-2 focus:ring-primary"
+                    placeholder="password"
+                    className="w-full p-3 rounded-md bg-zinc-800 border border-zinc-700 text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
+                    onBlur={() => setPasswordTouched(true)}
                     disabled={isLoading}
                     aria-invalid={!!error && error.toLowerCase().includes('password')}
+                    aria-label="Password"
                   />
+                  {passwordTouched && !passwordValid && (
+                    <p className="text-xs text-destructive mt-1">
+                      Password must be at least 8 characters.
+                    </p>
+                  )}
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute inset-y-0 right-0 flex items-center px-3 text-secondary hover:text-primary"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-zinc-400 hover:text-primary"
                     aria-label={showPassword ? 'Hide password' : 'Show password'}
+                    aria-pressed={showPassword}
+                    title={showPassword ? 'Hide password' : 'Show password'}
                   >
                     {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                   </button>
@@ -116,55 +141,46 @@ export default function LoginPage() {
               </>
             )}
 
-            {/* Two-Factor Method Selection */}
+            {showMethodSelection && !twoFactorData && (
+              <div className="text-sm text-center text-zinc-500">Loading options...</div>
+            )}
+
             {showMethodSelection && twoFactorData && (
               <div className="space-y-4">
-                <div className="text-sm text-secondary">
-                  <p>We&apos;ll send a verification code to:</p>
-                </div>
-
-                {/* SMS Option */}
+                <p className="text-sm text-zinc-400">We&apos;ll send a verification code to:</p>
                 {twoFactorData.canUseSms && (
                   <button
                     type="button"
                     onClick={() => setSelectedMethod('sms')}
-                    className={`w-full p-3 rounded border transition ${
+                    className={`w-full p-3 rounded-md border transition text-left font-medium text-zinc-100 ${
                       selectedMethod === 'sms'
-                        ? 'bg-primary border-primary text-surface'
-                        : 'bg-background border-accent text-text hover:border-primary'
+                        ? 'bg-primary border-primary text-white'
+                        : 'bg-zinc-900 border-zinc-700 hover:border-primary'
                     }`}
                     disabled={isLoading}
                   >
-                    <div className="text-left">
-                      <div className="font-medium">📱 SMS</div>
-                      <div className="text-sm opacity-80">{twoFactorData.phoneNumber}</div>
-                    </div>
+                    📱 SMS{' '}
+                    <span className="block text-xs opacity-80">{twoFactorData.phoneNumber}</span>
                   </button>
                 )}
-
-                {/* Email Option */}
                 {twoFactorData.canUseEmail && (
                   <button
                     type="button"
                     onClick={() => setSelectedMethod('email')}
-                    className={`w-full p-3 rounded border transition ${
+                    className={`w-full p-3 rounded-md border transition text-left font-medium text-zinc-100 ${
                       selectedMethod === 'email'
-                        ? 'bg-primary border-primary text-surface'
-                        : 'bg-background border-accent text-text hover:border-primary'
+                        ? 'bg-primary border-primary text-white'
+                        : 'bg-zinc-900 border-zinc-700 hover:border-primary'
                     }`}
                     disabled={isLoading}
                   >
-                    <div className="text-left">
-                      <div className="font-medium">📧 Email</div>
-                      <div className="text-sm opacity-80">{twoFactorData.email}</div>
-                    </div>
+                    📧 Email <span className="block text-xs opacity-80">{twoFactorData.email}</span>
                   </button>
                 )}
-
                 <button
                   type="button"
                   onClick={handleRequestTwoFactor}
-                  className="w-full bg-accent text-surface py-2 rounded hover:bg-primary transition disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full bg-primary text-white py-2 rounded-md hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed font-medium"
                   disabled={isLoading}
                 >
                   {isLoading
@@ -174,11 +190,10 @@ export default function LoginPage() {
               </div>
             )}
 
-            {/* OTP Input Field */}
             {showOtpInput && (
               <div className="space-y-1">
                 <label htmlFor="otp" className="sr-only">
-                  Verification Code
+                  6-digit verification code
                 </label>
                 <input
                   id="otp"
@@ -187,8 +202,10 @@ export default function LoginPage() {
                   pattern="\d*"
                   maxLength={6}
                   required
+                  autoFocus
+                  aria-label="6-digit verification code"
                   placeholder="Enter 6-digit code"
-                  className="w-full p-3 rounded bg-background border border-accent text-text placeholder:text-secondary focus:outline-none focus:ring-2 focus:ring-primary"
+                  className="w-full p-3 rounded-md bg-zinc-800 border border-zinc-700 text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900"
                   value={otpCode}
                   onChange={(e) => setOtpCode(e.target.value)}
                   disabled={isLoading}
@@ -199,92 +216,88 @@ export default function LoginPage() {
           </motion.div>
         </AnimatePresence>
 
-        {/* Submit Buttons */}
-        {!twoFactorData && (
-          <button
+        {(showOtpInput || !twoFactorData) && (
+          <motion.button
+            whileTap={{ scale: 0.97 }}
             type="submit"
-            className="w-full bg-accent text-surface py-2 rounded hover:bg-primary transition disabled:opacity-50 disabled:cursor-not-allowed"
-            disabled={isLoading}
+            className="w-full bg-primary text-white py-2 rounded-md hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900"
+            disabled={isLoading || (!showOtpInput && !twoFactorData && !formValid)}
           >
-            {isLoading ? 'Signing in...' : 'Sign In'}
-          </button>
+            <span className="flex items-center justify-center gap-2" aria-live="polite">
+              {isLoading && (
+                <span
+                  className="inline-block h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin"
+                  aria-hidden="true"
+                />
+              )}
+              {showOtpInput
+                ? isLoading
+                  ? 'Verifying...'
+                  : 'Verify Code'
+                : isLoading
+                  ? 'Signing in...'
+                  : 'Sign In'}
+            </span>
+          </motion.button>
         )}
 
-        {showOtpInput && (
-          <button
-            type="submit"
-            className="w-full bg-accent text-surface py-2 rounded hover:bg-primary transition disabled:opacity-50 disabled:cursor-not-allowed"
-            disabled={isLoading}
-          >
-            {isLoading ? 'Verifying...' : 'Verify Code'}
-          </button>
-        )}
-
-        {/* Sign Up Link - Only shown during initial login */}
         {!twoFactorData && (
-          <div className="text-center text-sm text-secondary">
-            <p>
-              Don&apos;t have an account?{' '}
-              <Link
-                href="/signup"
-                className="text-primary hover:text-accent transition-colors font-medium"
-              >
-                Sign up
-              </Link>
-            </p>
-          </div>
-        )}
-
-        {/* Error Display and Help Options */}
-        {error && (
-          <div className="text-sm text-center space-y-3" aria-live="polite">
-            <div className="bg-red-50/10 border border-red-200/20 rounded-lg p-4">
-              <p className="text-red-500 mb-2" role="alert">
-                {error}
+          <>
+            <hr className="my-4 border-zinc-700" />
+            <div className="text-center text-sm text-zinc-400">
+              <p>
+                Don&apos;t have an account?{' '}
+                <Link
+                  href="/signup"
+                  className="text-primary hover:underline font-medium transition-colors inline-flex items-center gap-1"
+                >
+                  Sign up <span aria-hidden="true">→</span>
+                </Link>
               </p>
-              <div className="text-secondary space-y-2">
-                {error.includes('verify your email address') ? (
-                  <>
-                    <p>Need help with email verification?</p>
-                    <div className="flex flex-col gap-2">
-                      <button
-                        type="button"
-                        onClick={handleResendVerificationEmail}
-                        className="text-primary hover:text-accent transition-colors disabled:opacity-50"
-                        disabled={isResending}
-                      >
-                        {isResending ? 'Sending...' : 'Resend verification email'}
-                      </button>
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <p>Need help signing in?</p>
-                    <div className="flex flex-col gap-2">
-                      <Link
-                        href="/signup"
-                        className="text-primary hover:text-accent transition-colors"
-                      >
-                        Create a new account
-                      </Link>
-                      <Link
-                        href="/reset-password"
-                        className="text-primary hover:text-accent transition-colors"
-                      >
-                        Forgot your password?
-                      </Link>
-                    </div>
-                  </>
-                )}
-              </div>
             </div>
-          </div>
+          </>
         )}
-      </form>
 
-      <div className="absolute bottom-4 right-4">
-        <ThemeToggle />
-      </div>
+        {error && (
+          <FormErrorBox error={error}>
+            <div className="text-zinc-400 space-y-2">
+              {error.includes('verify your email address') ? (
+                <>
+                  <p>Need help with email verification?</p>
+                  <div className="flex flex-col gap-2">
+                    <button
+                      type="button"
+                      onClick={handleResendVerificationEmail}
+                      className="text-primary hover:text-accent transition-colors disabled:opacity-50"
+                      disabled={isResending}
+                    >
+                      {isResending ? 'Sending...' : 'Resend verification email'}
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <p>Need help signing in?</p>
+                  <div className="flex flex-col gap-2">
+                    <Link
+                      href="/signup"
+                      className="text-primary hover:text-accent transition-colors"
+                    >
+                      Create a new account
+                    </Link>
+                    <Link
+                      href="/reset-password"
+                      className="text-primary hover:text-accent transition-colors"
+                    >
+                      Forgot your password?
+                    </Link>
+                  </div>
+                </>
+              )}
+            </div>
+          </FormErrorBox>
+        )}
+      </motion.form>
     </main>
   );
 }

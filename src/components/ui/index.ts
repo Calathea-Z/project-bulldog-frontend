@@ -10,3 +10,4 @@ export * from './LogoutButton';
 export * from './BottomNav';
 export * from './ReminderToggle';
 export * from './BulldogDatePicker';
+export * from './Confetti';
