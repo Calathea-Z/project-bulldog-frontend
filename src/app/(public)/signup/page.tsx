@@ -6,13 +6,13 @@ import { api } from '@/services';
 import toast from 'react-hot-toast';
 import Image from 'next/image';
 import Link from 'next/link';
-import icon512 from '../../../../public/icon-512.png';
-import { LoadingScreen, ThemeToggle } from '@/components';
+import icon512rounded from '../../../../public/icon-512-rounded.png';
 import { useRedirectIfAuthenticated } from '@/hooks';
 import { Eye, EyeOff } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { ConfettiOverlay } from '@/components';
 import { CheckCircle } from 'lucide-react';
+import { FormErrorBox } from '@/components/ui/FormErrorBox';
 
 export default function SignUpPage() {
   const router = useRouter();
@@ -25,6 +25,19 @@ export default function SignUpPage() {
   const [isEmailSent, setIsEmailSent] = useState(false);
   const [emailSent, setEmailSent] = useState<boolean | null>(null);
   const [successMessage, setSuccessMessage] = useState('');
+  const [emailTouched, setEmailTouched] = useState(false);
+  const [passwordTouched, setPasswordTouched] = useState(false);
+  const [nameTouched, setNameTouched] = useState(false);
+
+  const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  const passwordValid =
+    password.length >= 8 &&
+    /[A-Z]/.test(password) &&
+    /[0-9]/.test(password) &&
+    /[^A-Za-z0-9]/.test(password);
+  const nameValid = displayName.trim().length >= 3;
+
+  const formValid = emailValid && passwordValid && nameValid;
 
   useRedirectIfAuthenticated();
 
@@ -44,11 +57,9 @@ export default function SignUpPage() {
 
     try {
       const result = await api
-        .post('/auth/register', {
-          email,
-          displayName,
-          password,
-        })
+        .post('/auth/register', { email, displayName, password }, {
+          suppressErrorToast: true,
+        } as any)
         .then((res) => res.data);
 
       if (result.emailVerificationRequired) {
@@ -92,7 +103,6 @@ export default function SignUpPage() {
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-neutral-900 via-neutral-950 to-black text-zinc-100 flex items-center justify-center p-4 relative overflow-hidden">
-      {isLoading && <LoadingScreen />}
       {isEmailSent && emailSent === true && <ConfettiOverlay />}
 
       <motion.form
@@ -104,7 +114,7 @@ export default function SignUpPage() {
         transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
       >
         <div className="flex justify-center mb-4">
-          <Image src={icon512} alt="Bulldog Logo" width={64} height={64} priority />
+          <Image src={icon512rounded} alt="Bulldog Logo" width={64} height={64} priority />
         </div>
 
         <h1 className="text-2xl font-bold text-center text-primary">
@@ -127,9 +137,13 @@ export default function SignUpPage() {
                 className="w-full p-3 rounded-md bg-zinc-800 border border-zinc-700 text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900"
                 value={displayName}
                 onChange={(e) => setDisplayName(e.target.value)}
+                onBlur={() => setNameTouched(true)}
                 disabled={isLoading}
                 aria-label="Full name"
               />
+              {nameTouched && !nameValid && (
+                <p className="text-xs text-destructive mt-1">Name must be at least 3 characters.</p>
+              )}
             </div>
 
             <div className="space-y-1">
@@ -141,9 +155,13 @@ export default function SignUpPage() {
                 className="w-full p-3 rounded-md bg-zinc-800 border border-zinc-700 text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                onBlur={() => setEmailTouched(true)}
                 disabled={isLoading}
                 aria-label="Email address"
               />
+              {emailTouched && !emailValid && (
+                <p className="text-xs text-destructive mt-1">Please enter a valid email address.</p>
+              )}
             </div>
 
             <div className="relative space-y-1">
@@ -155,27 +173,42 @@ export default function SignUpPage() {
                 className="w-full p-3 rounded-md bg-zinc-800 border border-zinc-700 text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                onBlur={() => setPasswordTouched(true)}
                 disabled={isLoading}
                 aria-label="Password"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute inset-y-0 right-0 flex items-center justify-center w-10 h-10 text-zinc-400 hover:text-primary"
+                className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-zinc-400 hover:text-primary"
                 aria-label={showPassword ? 'Hide password' : 'Show password'}
                 aria-pressed={showPassword}
               >
                 {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
               </button>
+              {passwordTouched && !passwordValid && (
+                <p className="text-xs text-destructive mt-1">
+                  Password must be at least 8 characters and include 1 uppercase letter, 1 number,
+                  and 1 symbol.
+                </p>
+              )}
             </div>
 
             <motion.button
               whileTap={{ scale: 0.97 }}
               type="submit"
               className="w-full bg-primary text-white py-2 rounded-md hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900"
-              disabled={isLoading}
+              disabled={isLoading || !formValid}
             >
-              {isLoading ? 'Creating account...' : 'Sign Up'}
+              <span className="flex items-center justify-center gap-2" aria-live="polite">
+                {isLoading && (
+                  <span
+                    className="inline-block h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin"
+                    aria-hidden="true"
+                  />
+                )}
+                {isLoading ? 'Creating account...' : 'Sign Up'}
+              </span>
             </motion.button>
           </>
         ) : emailSent === false ? (
@@ -258,41 +291,28 @@ export default function SignUpPage() {
         )}
 
         {!isEmailSent && (
-          <div className="text-center text-sm text-zinc-400">
-            <p>
-              Already have an account?{' '}
-              <Link
-                href="/login"
-                className="text-primary hover:text-accent transition-colors font-medium"
-              >
-                Log in
-              </Link>
-            </p>
+          <div className="text-sm text-muted-foreground text-center">
+            Already have an account?{' '}
+            <Link href="/login" className="font-semibold text-cyan-400 hover:underline">
+              Log in <span aria-hidden="true">→</span>
+            </Link>
           </div>
         )}
 
         {error && (
-          <div className="text-sm text-center space-y-3">
-            <div className="bg-red-50/10 border border-red-200/20 rounded-lg p-4">
-              <p className="text-red-500 mb-2" role="alert">
-                {error}
-              </p>
-              <div className="text-zinc-400 space-y-2">
-                <p>Need help?</p>
-                <div className="flex flex-col gap-2">
-                  <Link href="/login" className="text-primary hover:text-accent transition-colors">
-                    Already have an account?
-                  </Link>
-                  <Link
-                    href="/support"
-                    className="text-primary hover:text-accent transition-colors"
-                  >
-                    Contact support
-                  </Link>
-                </div>
+          <FormErrorBox error={error}>
+            <div className="text-zinc-400 space-y-2">
+              <p>Need help?</p>
+              <div className="flex flex-col gap-2">
+                <Link href="/login" className="text-primary hover:text-accent transition-colors">
+                  Already have an account?
+                </Link>
+                <Link href="/support" className="text-primary hover:text-accent transition-colors">
+                  Contact support
+                </Link>
               </div>
             </div>
-          </div>
+          </FormErrorBox>
         )}
       </motion.form>
     </main>

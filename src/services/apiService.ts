@@ -220,21 +220,26 @@ api.interceptors.response.use(
       }
     }
 
-    // Handle other error statuses with generic toast notifications and throttling
-    if (err.response?.status >= 500) {
-      toast.error('Server error. Please try again later.', { id: 'server-error' });
-    } else if (err.response?.status === 403) {
-      toast.error("Access denied. You don't have permission to perform this action.", {
-        id: 'access-denied',
-      });
-    } else if (err.response?.status === 404) {
-      toast.error('Resource not found.', { id: 'not-found' });
-    } else if (err.response?.status === 422) {
-      // Validation errors - let the component handle these specifically
-      console.log('Validation error:', err.response?.data);
-    } else if (err.response?.status >= 400 && err.response?.status < 500) {
-      // Other client errors - show generic message
-      toast.error('Request failed. Please check your input and try again.', { id: 'client-error' });
+    // Only show global toast if not suppressed by request config
+    const suppressToast = err.config?.suppressErrorToast;
+
+    if (!suppressToast) {
+      if (err.response?.status >= 500) {
+        toast.error('Server error. Please try again later.', { id: 'server-error' });
+      } else if (err.response?.status === 403) {
+        toast.error("Access denied. You don't have permission to perform this action.", {
+          id: 'access-denied',
+        });
+      } else if (err.response?.status === 404) {
+        toast.error('Resource not found.', { id: 'not-found' });
+      } else if (err.response?.status === 422) {
+        // Validation errors - let the component handle these specifically
+        console.log('Validation error:', err.response?.data);
+      } else if (err.response?.status >= 400 && err.response?.status < 500) {
+        toast.error('Request failed. Please check your input and try again.', {
+          id: 'client-error',
+        });
+      }
     }
 
     return Promise.reject(err);
