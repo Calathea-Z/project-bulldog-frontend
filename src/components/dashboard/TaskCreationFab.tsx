@@ -18,6 +18,7 @@ export function TaskCreationFab({ expanded, setExpanded, onVoiceCapture }: TaskC
   const [newDueAt, setNewDueAt] = useState<Date | null>(null);
   const [shouldRemind, setShouldRemind] = useState(false);
   const [reminderMinutesBeforeDue, setReminderMinutesBeforeDue] = useState<number | null>(null);
+  const [isDateOnly, setIsDateOnly] = useState(false);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
   const createActionItem = useCreateActionItem();
@@ -43,7 +44,7 @@ export function TaskCreationFab({ expanded, setExpanded, onVoiceCapture }: TaskC
       await createActionItem.mutateAsync({
         text: newText.trim(),
         dueAt: utcDueAt,
-        isDateOnly: false, // Default to false for manual tasks
+        isDateOnly,
         shouldRemind,
         reminderMinutesBeforeDue,
       });
@@ -55,6 +56,7 @@ export function TaskCreationFab({ expanded, setExpanded, onVoiceCapture }: TaskC
       setNewDueAt(null);
       setShouldRemind(false);
       setReminderMinutesBeforeDue(null);
+      setIsDateOnly(false);
       setShowManualForm(false);
     } catch (error) {
       console.error('Failed to create task:', error);
@@ -68,6 +70,7 @@ export function TaskCreationFab({ expanded, setExpanded, onVoiceCapture }: TaskC
     setNewDueAt(null);
     setShouldRemind(false);
     setReminderMinutesBeforeDue(null);
+    setIsDateOnly(false);
   };
 
   const actions = [
@@ -157,12 +160,12 @@ export function TaskCreationFab({ expanded, setExpanded, onVoiceCapture }: TaskC
       {/* Main FAB */}
       <button
         onClick={toggleExpand}
-        className="bg-blue-600 text-white rounded-full p-4 shadow-lg hover:bg-blue-700 transition-colors"
+        className="bg-blue-600 text-white rounded-full p-3 shadow-lg hover:bg-blue-700 transition-colors"
         aria-label={expanded ? 'Close task creation menu' : 'Open task creation menu'}
         aria-expanded={expanded}
       >
         <Plus
-          className={`w-6 h-6 transform transition-transform duration-200 ease-in-out ${
+          className={`w-5 h-5 transform transition-transform duration-200 ease-in-out ${
             expanded ? 'rotate-45' : ''
           }`}
         />
@@ -186,6 +189,8 @@ export function TaskCreationFab({ expanded, setExpanded, onVoiceCapture }: TaskC
           handleAdd={handleAdd}
           onClose={handleCloseManualForm}
           isLoading={createActionItem.isPending}
+          isDateOnly={isDateOnly}
+          setIsDateOnly={setIsDateOnly}
         />
       )}
     </div>

@@ -14,6 +14,9 @@ export * from './auth/useLoginForm';
 //Summaries
 export * from './summaries/useSummaryHooks';
 
+//Reminders
+export * from './reminders/useReminders';
+
 //UI
 export * from './ui/usePullToRefresh';
 export * from './ui/useDisableBodyScroll';

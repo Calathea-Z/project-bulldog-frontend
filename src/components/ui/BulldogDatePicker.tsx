@@ -1,24 +1,32 @@
-// updated: smooth scroll wheel with visual depth and polished UX
+// updated: seamless dropdown that feels like one cohesive unit
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Calendar, Clock } from 'lucide-react';
 import { cn } from '@/utils/cn';
 import { useDisableBodyScroll } from '@/hooks/ui/useDisableBodyScroll';
 
 interface BulldogDatePickerProps {
   selected: Date | null;
   onChange: (date: Date | null) => void;
+  isDateOnly?: boolean;
+  disableBodyScroll?: boolean;
 }
 
-export function BulldogDatePicker({ selected, onChange }: BulldogDatePickerProps) {
+export function BulldogDatePicker({
+  selected,
+  onChange,
+  isDateOnly = false,
+  disableBodyScroll = true,
+}: BulldogDatePickerProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [datePicked, setDatePicked] = useState<Date | null>(null);
   const [hour, setHour] = useState(12);
   const [minute, setMinute] = useState(0);
   const [ampm, setAmPm] = useState<'AM' | 'PM'>('AM');
+  const [activeTab, setActiveTab] = useState<'date' | 'time'>('date');
 
   // Track which items are currently centered in each scroll wheel
   const [centeredHour, setCenteredHour] = useState(12);
@@ -26,6 +34,9 @@ export function BulldogDatePicker({ selected, onChange }: BulldogDatePickerProps
   const [centeredAmPm, setCenteredAmPm] = useState<'AM' | 'PM'>('AM');
 
   const today = new Date();
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const [previewDate, setPreviewDate] = useState<Date | null>(selected);
 
   // Initialize time picker with current values when opened
   useEffect(() => {
@@ -59,7 +70,30 @@ export function BulldogDatePicker({ selected, onChange }: BulldogDatePickerProps
     }
   }, [isOpen, selected]);
 
-  useDisableBodyScroll(isOpen);
+  useEffect(() => {
+    if (!isOpen) {
+      setPreviewDate(selected);
+    }
+  }, [isOpen, selected]);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isOpen]);
+
+  useDisableBodyScroll(isOpen && disableBodyScroll);
 
   // Handle scroll to detect centered items
   const handleScroll = (
@@ -93,7 +127,7 @@ export function BulldogDatePicker({ selected, onChange }: BulldogDatePickerProps
   };
 
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && activeTab === 'time') {
       setTimeout(() => {
         document.querySelectorAll('[data-picker-type]').forEach((container) => {
           const centered = container.querySelector(`[data-scroll-item][data-selected="true"]`);
@@ -102,6 +136,20 @@ export function BulldogDatePicker({ selected, onChange }: BulldogDatePickerProps
           }
         });
       }, 300);
+    }
+  }, [isOpen, activeTab]);
+
+  // Remove the effect that syncs wheels on every tab switch
+  // Instead, initialize wheels from previewDate only when the picker is opened or a new date is selected
+  useEffect(() => {
+    if (isOpen && previewDate) {
+      const h = previewDate.getHours();
+      setHour(h === 0 ? 12 : h > 12 ? h - 12 : h);
+      setMinute(previewDate.getMinutes());
+      setAmPm(h >= 12 ? 'PM' : 'AM');
+      setCenteredHour(h === 0 ? 12 : h > 12 ? h - 12 : h);
+      setCenteredMinute(previewDate.getMinutes());
+      setCenteredAmPm(h >= 12 ? 'PM' : 'AM');
     }
   }, [isOpen]);
 
@@ -121,218 +169,335 @@ export function BulldogDatePicker({ selected, onChange }: BulldogDatePickerProps
 
   const handleDateSelect = (day: number) => {
     if (day === 0) return;
-    const d = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
-    setDatePicked(d);
+    let newDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
+    if (previewDate) {
+      newDate.setHours(
+        previewDate.getHours(),
+        previewDate.getMinutes(),
+        previewDate.getSeconds(),
+        previewDate.getMilliseconds(),
+      );
+    } else if (selected) {
+      newDate.setHours(
+        selected.getHours(),
+        selected.getMinutes(),
+        selected.getSeconds(),
+        selected.getMilliseconds(),
+      );
+    }
+    setDatePicked(newDate);
+    setPreviewDate(newDate);
+    // Also update wheels from newDate
+    const h = newDate.getHours();
+    setHour(h === 0 ? 12 : h > 12 ? h - 12 : h);
+    setMinute(newDate.getMinutes());
+    setAmPm(h >= 12 ? 'PM' : 'AM');
+    setCenteredHour(h === 0 ? 12 : h > 12 ? h - 12 : h);
+    setCenteredMinute(newDate.getMinutes());
+    setCenteredAmPm(h >= 12 ? 'PM' : 'AM');
+    if (isDateOnly) {
+      handleConfirm(newDate);
+    } else {
+      setActiveTab('time');
+    }
   };
 
-  const handleTimeConfirm = () => {
-    if (!datePicked) return;
-    const fullDate = new Date(datePicked);
-    let finalHour = centeredHour % 12;
-    if (centeredAmPm === 'PM') finalHour += 12;
-    fullDate.setHours(finalHour, centeredMinute);
-    onChange(fullDate);
+  const handleTimeChange = (newHour: number, newMinute: number, newAmPm: 'AM' | 'PM') => {
+    let hour = newHour % 12;
+    if (newAmPm === 'PM') hour += 12;
+    const updated = previewDate ? new Date(previewDate) : new Date();
+    updated.setHours(hour, newMinute, 0, 0);
+    setHour(newHour);
+    setMinute(newMinute);
+    setAmPm(newAmPm);
+    setCenteredHour(newHour);
+    setCenteredMinute(newMinute);
+    setCenteredAmPm(newAmPm);
+    setPreviewDate(updated);
+  };
+
+  const handleConfirm = (dateOverride?: Date) => {
+    const toSave = dateOverride || previewDate;
+    if (!toSave) return;
+    if (isDateOnly) {
+      toSave.setHours(0, 0, 0, 0);
+    }
+    onChange(new Date(toSave));
     setIsOpen(false);
     setDatePicked(null);
+    setActiveTab('date');
   };
 
+  // For display, use previewDate if open, else selected
+  const displayDate = isOpen ? previewDate : selected;
+
   return (
-    <div className="relative w-full">
-      <input
-        type="text"
-        readOnly
-        value={selected ? selected.toLocaleString() : ''}
-        onClick={() => setIsOpen(true)}
-        className="w-full px-4 py-2 border rounded-md bg-background text-xs cursor-pointer"
-      />
+    <div className="relative w-full" ref={containerRef}>
+      {/* Main Container with unified border */}
+      <div
+        className={cn(
+          'border border-zinc-300 dark:border-zinc-700 rounded-md overflow-hidden transition-all duration-200',
+          isOpen && 'border-blue-500 ring-2 ring-blue-500/20',
+        )}
+      >
+        {/* Input Row */}
+        <div className="flex divide-x divide-zinc-300 dark:divide-zinc-700">
+          {/* Date Input */}
+          <button
+            onClick={() => {
+              setIsOpen(true);
+              setActiveTab('date');
+            }}
+            className="flex-1 px-3 py-2 bg-background text-xs cursor-pointer flex items-center gap-2 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors"
+          >
+            <Calendar className="w-4 h-4 text-zinc-400" />
+            <span className="truncate">
+              {displayDate ? displayDate.toLocaleDateString() : 'Select date'}
+            </span>
+          </button>
 
-      <AnimatePresence>
-        {isOpen && (
-          <>
-            {/* Backdrop with blur */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 z-[100] bg-black/50 backdrop-blur-sm"
-              onClick={() => setIsOpen(false)}
-            />
-
-            <motion.div
-              initial={{ y: 50, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              exit={{ y: 50, opacity: 0 }}
-              transition={{ duration: 0.2 }}
-              className="fixed inset-0 z-[101] bg-background border-t border-zinc-700 shadow-xl rounded-t-xl max-h-screen sm:max-h-[90vh] overflow-y-auto"
+          {/* Time Input - only show if not all-day */}
+          {!isDateOnly && (
+            <button
+              onClick={() => {
+                if (displayDate) {
+                  setIsOpen(true);
+                  setActiveTab('time');
+                }
+              }}
+              disabled={!displayDate}
+              className={cn(
+                'px-3 py-2 bg-background text-xs cursor-pointer flex items-center gap-2 min-w-[80px] hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors',
+                !displayDate && 'opacity-50 cursor-not-allowed',
+              )}
             >
-              {/* Modal handle */}
-              <div className="flex justify-center pt-3 pb-2">
-                <div className="w-8 h-1 bg-zinc-500 rounded-full opacity-50" />
-              </div>
+              <Clock className="w-4 h-4 text-zinc-400" />
+              <span className="truncate">
+                {displayDate
+                  ? displayDate.toLocaleTimeString([], {
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })
+                  : 'Time'}
+              </span>
+            </button>
+          )}
+        </div>
 
-              <div className="px-6 pb-6">
-                <div className="text-center font-semibold text-base mb-4">Pick a Date & Time</div>
-
-                <div className="flex justify-between items-center mb-3">
+        {/* Dropdown Content - slides down and pushes content */}
+        <AnimatePresence>
+          {isOpen && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.2, ease: 'easeOut' }}
+              className="border-t border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900"
+            >
+              {/* Tab Navigation */}
+              {!isDateOnly && (
+                <div className="flex border-b border-zinc-300 dark:border-zinc-700">
                   <button
-                    onClick={() =>
-                      setCurrentDate(
-                        new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1),
-                      )
-                    }
-                    className="p-2 hover:bg-accent/20 rounded-full transition-colors"
+                    onClick={() => setActiveTab('date')}
+                    className={cn(
+                      'flex-1 px-4 py-2 text-xs font-medium transition-colors',
+                      activeTab === 'date'
+                        ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50 dark:bg-blue-900/20'
+                        : 'text-zinc-500 hover:text-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-800',
+                    )}
                   >
-                    <ChevronLeft className="h-4 w-4" />
+                    Date
                   </button>
-                  <span className="text-sm font-medium text-muted">
-                    {currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
-                  </span>
                   <button
-                    onClick={() =>
-                      setCurrentDate(
-                        new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1),
-                      )
-                    }
-                    className="p-2 hover:bg-accent/20 rounded-full transition-colors"
+                    onClick={() => setActiveTab('time')}
+                    className={cn(
+                      'flex-1 px-4 py-2 text-xs font-medium transition-colors',
+                      activeTab === 'time'
+                        ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50 dark:bg-blue-900/20'
+                        : 'text-zinc-500 hover:text-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-800',
+                    )}
                   >
-                    <ChevronRight className="h-4 w-4" />
+                    Time
                   </button>
                 </div>
+              )}
 
-                <div className="grid grid-cols-7 gap-1 text-xs text-muted mb-2">
-                  {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((d) => (
-                    <div key={d} className="text-center font-medium uppercase tracking-wide">
-                      {d}
-                    </div>
-                  ))}
-                </div>
-
-                <div className="grid grid-cols-7 gap-1 mb-4">
-                  {calendarDays.map((day, i) => (
+              {/* Date Picker */}
+              {activeTab === 'date' && (
+                <div className="p-4">
+                  <div className="flex justify-between items-center mb-3">
                     <button
-                      key={i}
-                      onClick={() => handleDateSelect(day)}
-                      className={cn(
-                        'h-9 w-9 flex items-center justify-center rounded-full text-xs transition-all',
-                        day === today.getDate() &&
-                          currentDate.getMonth() === today.getMonth() &&
-                          currentDate.getFullYear() === today.getFullYear() &&
-                          'text-primary border border-primary',
-                        day === (datePicked?.getDate() || -1) &&
-                          'bg-primary text-background font-semibold scale-105',
-                        day !== 0 ? 'hover:bg-accent/10' : 'opacity-0 cursor-default',
-                      )}
+                      onClick={() =>
+                        setCurrentDate(
+                          new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1),
+                        )
+                      }
+                      className="p-1 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded transition-colors"
                     >
-                      {day !== 0 ? day : ''}
+                      <ChevronLeft className="h-4 w-4" />
                     </button>
-                  ))}
-                </div>
+                    <span className="text-sm font-medium">
+                      {currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                    </span>
+                    <button
+                      onClick={() =>
+                        setCurrentDate(
+                          new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1),
+                        )
+                      }
+                      className="p-1 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded transition-colors"
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                    </button>
+                  </div>
 
-                {datePicked && (
-                  <>
-                    <div className="text-center text-xs text-muted mb-2">
-                      Time for{' '}
-                      <span className="text-white font-medium">{datePicked.toDateString()}</span>
-                    </div>
-
-                    {/* Gradient overlay without selection lines */}
-                    <div className="relative mb-6">
-                      <div className="flex justify-center gap-6">
-                        {[
-                          {
-                            label: 'Hour',
-                            items: [...Array(12).keys()].map((h) => h + 1),
-                            selected: hour,
-                            setter: setHour,
-                          },
-                          {
-                            label: 'Minute',
-                            items: [...Array(60).keys()],
-                            selected: minute,
-                            setter: setMinute,
-                          },
-                          { label: 'AM/PM', items: ['AM', 'PM'], selected: ampm, setter: setAmPm },
-                        ].map((group, idx) => (
-                          <div
-                            key={idx}
-                            data-picker-type
-                            className="h-40 w-16 overflow-y-auto snap-y snap-mandatory rounded-2xl bg-accent/5 shadow-inner border border-accent/10 relative [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
-                            onScroll={(e) => {
-                              if (group.label === 'Hour') {
-                                handleScroll(e, group.items, setCenteredHour);
-                              } else if (group.label === 'Minute') {
-                                handleScroll(e, group.items, setCenteredMinute);
-                              } else if (group.label === 'AM/PM') {
-                                handleScroll(e, group.items, setCenteredAmPm);
-                              }
-                            }}
-                          >
-                            <div className="sr-only">{group.label}</div>
-                            {/* Top padding for scrolling */}
-                            <div className="h-[75px]" />
-                            {group.items.map((value) => {
-                              const isCentered =
-                                (group.label === 'Hour' && value === centeredHour) ||
-                                (group.label === 'Minute' && value === centeredMinute) ||
-                                (group.label === 'AM/PM' && value === centeredAmPm);
-
-                              return (
-                                <div
-                                  key={value.toString()}
-                                  data-scroll-item
-                                  onClick={() => {
-                                    group.setter(value as any);
-                                    // Also update centered value when clicked
-                                    if (group.label === 'Hour') setCenteredHour(value as number);
-                                    else if (group.label === 'Minute')
-                                      setCenteredMinute(value as number);
-                                    else if (group.label === 'AM/PM')
-                                      setCenteredAmPm(value as 'AM' | 'PM');
-                                  }}
-                                  data-selected={group.selected === value}
-                                  className={cn(
-                                    'h-10 flex justify-center items-center text-sm snap-center cursor-pointer transition-all duration-150 rounded-lg mx-1',
-                                    isCentered
-                                      ? 'text-primary font-bold scale-105 opacity-100 bg-primary/12 shadow-sm border border-primary/30'
-                                      : 'opacity-50 scale-95 hover:opacity-80 hover:bg-accent/5',
-                                  )}
-                                >
-                                  {value.toString().padStart(2, '0')}
-                                </div>
-                              );
-                            })}
-                            {/* Bottom padding for scrolling */}
-                            <div className="h-[75px]" />
-                          </div>
-                        ))}
+                  <div className="grid grid-cols-7 gap-1 text-xs text-zinc-500 mb-2">
+                    {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((d) => (
+                      <div key={d} className="text-center font-medium">
+                        {d}
                       </div>
-                    </div>
-                  </>
-                )}
-                {/* Always show Cancel/Confirm buttons at the bottom */}
-                <div className="flex justify-center pt-4 gap-2">
-                  <button
-                    onClick={() => {
-                      setIsOpen(false);
-                      setDatePicked(null);
-                    }}
-                    className="px-8 py-3 text-sm bg-zinc-700 text-white font-semibold rounded-2xl shadow-lg hover:bg-zinc-800 hover:shadow-xl transform hover:scale-[1.02] transition-all duration-200 active:scale-[0.98]"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={handleTimeConfirm}
-                    className="px-8 py-3 text-sm bg-primary text-background font-semibold rounded-2xl shadow-lg hover:bg-primary/90 hover:shadow-xl transform hover:scale-[1.02] transition-all duration-200 active:scale-[0.98] disabled:opacity-50"
-                    disabled={!datePicked}
-                  >
-                    Confirm
-                  </button>
+                    ))}
+                  </div>
+
+                  <div className="grid grid-cols-7 gap-1">
+                    {calendarDays.map((day, i) => (
+                      <button
+                        key={i}
+                        onClick={() => handleDateSelect(day)}
+                        className={cn(
+                          'h-8 w-8 flex items-center justify-center rounded text-xs transition-all',
+                          day === today.getDate() &&
+                            currentDate.getMonth() === today.getMonth() &&
+                            currentDate.getFullYear() === today.getFullYear() &&
+                            'text-blue-600 border border-blue-600',
+                          day === (datePicked?.getDate() || -1) &&
+                            'bg-blue-600 text-white font-semibold',
+                          day !== 0
+                            ? 'hover:bg-zinc-100 dark:hover:bg-zinc-800'
+                            : 'opacity-0 cursor-default',
+                        )}
+                      >
+                        {day !== 0 ? day : ''}
+                      </button>
+                    ))}
+                  </div>
                 </div>
+              )}
+
+              {/* Time Picker */}
+              {activeTab === 'time' && !isDateOnly && (
+                <div className="p-4">
+                  <div className="text-center text-sm text-zinc-600 dark:text-zinc-400 mb-4">
+                    Time for {displayDate?.toDateString()}
+                  </div>
+
+                  <div className="flex justify-center gap-4">
+                    {[
+                      {
+                        label: 'Hour',
+                        items: [...Array(12).keys()].map((h) => h + 1),
+                        selected: hour,
+                        setter: setHour,
+                      },
+                      {
+                        label: 'Minute',
+                        items: [...Array(60).keys()],
+                        selected: minute,
+                        setter: setMinute,
+                      },
+                      { label: 'AM/PM', items: ['AM', 'PM'], selected: ampm, setter: setAmPm },
+                    ].map((group, idx) => (
+                      <div
+                        key={idx}
+                        data-picker-type
+                        className="h-32 w-12 overflow-y-auto snap-y snap-mandatory rounded-lg bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 relative [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
+                        onScroll={(e) => {
+                          if (group.label === 'Hour') {
+                            handleScroll(e, group.items, setCenteredHour);
+                          } else if (group.label === 'Minute') {
+                            handleScroll(e, group.items, setCenteredMinute);
+                          } else if (group.label === 'AM/PM') {
+                            handleScroll(e, group.items, setCenteredAmPm);
+                          }
+                        }}
+                      >
+                        <div className="sr-only">{group.label}</div>
+                        <div className="h-[48px]" />
+                        {group.items.map((value) => {
+                          const isCentered =
+                            (group.label === 'Hour' && value === centeredHour) ||
+                            (group.label === 'Minute' && value === centeredMinute) ||
+                            (group.label === 'AM/PM' && value === centeredAmPm);
+
+                          let onClickHandler;
+                          if (group.label === 'Hour') {
+                            onClickHandler = () => {
+                              setHour(value as number);
+                              setCenteredHour(value as number);
+                              handleTimeChange(value as number, minute, ampm);
+                            };
+                          } else if (group.label === 'Minute') {
+                            onClickHandler = () => {
+                              setMinute(value as number);
+                              setCenteredMinute(value as number);
+                              handleTimeChange(hour, value as number, ampm);
+                            };
+                          } else if (group.label === 'AM/PM') {
+                            onClickHandler = () => {
+                              setAmPm(value as 'AM' | 'PM');
+                              setCenteredAmPm(value as 'AM' | 'PM');
+                              handleTimeChange(hour, minute, value as 'AM' | 'PM');
+                            };
+                          }
+
+                          return (
+                            <div
+                              key={value.toString()}
+                              data-scroll-item
+                              onClick={onClickHandler}
+                              data-selected={group.selected === value}
+                              className={cn(
+                                'h-8 flex justify-center items-center text-sm snap-center cursor-pointer transition-all duration-150',
+                                isCentered
+                                  ? 'text-blue-600 font-bold scale-105 bg-blue-50 dark:bg-blue-900/20'
+                                  : 'opacity-60 hover:opacity-100',
+                              )}
+                            >
+                              {value.toString().padStart(2, '0')}
+                            </div>
+                          );
+                        })}
+                        <div className="h-[48px]" />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Action Buttons */}
+              <div className="flex justify-end gap-2 p-4 border-t border-zinc-300 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800/50">
+                <button
+                  onClick={() => {
+                    setIsOpen(false);
+                    setDatePicked(null);
+                    setActiveTab('date');
+                  }}
+                  className="px-3 py-1.5 text-xs bg-white dark:bg-zinc-700 text-zinc-700 dark:text-zinc-300 rounded border border-zinc-300 dark:border-zinc-600 hover:bg-zinc-50 dark:hover:bg-zinc-600 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => handleConfirm()}
+                  className="px-3 py-1.5 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors disabled:opacity-50"
+                  disabled={!displayDate}
+                >
+                  Confirm
+                </button>
               </div>
             </motion.div>
-          </>
-        )}
-      </AnimatePresence>
+          )}
+        </AnimatePresence>
+      </div>
     </div>
   );
 }

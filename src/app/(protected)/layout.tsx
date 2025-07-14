@@ -1,3 +1,4 @@
+// app/(protected)/layout.tsx
 'use client';
 
 import { useAuth, AuthProvider } from '../../context/AuthContext';
@@ -9,11 +10,11 @@ import { BottomNav } from '@/components';
 function Guard({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const auth = useAuth();
-  const hasRedirected = useRef(false); // only show toast once per mount
+  const redirectOnce = useRef(false);
 
   useEffect(() => {
-    if (auth.status === 'unauthenticated' && !hasRedirected.current) {
-      hasRedirected.current = true;
+    if (auth.status === 'unauthenticated' && !redirectOnce.current) {
+      redirectOnce.current = true;
       toast.error("You're not logged in.");
       router.replace('/login');
     }
@@ -27,7 +28,9 @@ function Guard({ children }: { children: React.ReactNode }) {
     );
   }
 
-  if (auth.status === 'authenticated') return <>{children}</>;
+  if (auth.status === 'authenticated') {
+    return <>{children}</>;
+  }
   return null;
 }
 
@@ -35,7 +38,12 @@ export default function ProtectedLayout({ children }: { children: React.ReactNod
   return (
     <AuthProvider>
       <Guard>
-        <div className="min-h-screen pb-16">{children}</div>
+        <div
+          className="flex flex-col h-screen"
+          style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 65px)' }}
+        >
+          {children}
+        </div>
         <BottomNav />
       </Guard>
     </AuthProvider>

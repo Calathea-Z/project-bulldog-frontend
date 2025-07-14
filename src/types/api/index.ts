@@ -25,3 +25,11 @@ export interface Summary {
   createdAt: string;
   actionItems: ActionItem[];
 }
+
+export interface Reminder {
+  id: string;
+  message: string;
+  reminderTime: string;
+  isSent: boolean;
+  actionItemId: string | null;
+}

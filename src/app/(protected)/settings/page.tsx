@@ -4,6 +4,7 @@ import { useRef, useEffect, useState } from 'react';
 import { useUserSettings, useUserTimeZoneDisplay } from '@/hooks';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Clock } from 'lucide-react';
+import { Switch } from '@headlessui/react';
 
 export default function SettingsPage() {
   const {
@@ -20,6 +21,7 @@ export default function SettingsPage() {
 
   const timezoneRef = useRef<HTMLDivElement | null>(null);
   const [showBanner, setShowBanner] = useState(false);
+  const [showReminderCountBadge, setShowReminderCountBadge] = useState(false);
 
   // Scroll to timezone picker if not set
   useEffect(() => {
@@ -28,6 +30,18 @@ export default function SettingsPage() {
       setShowBanner(true);
     }
   }, [isLoading, user]);
+
+  // Load from localStorage on mount
+  useEffect(() => {
+    const stored = localStorage.getItem('showReminderCountBadge');
+    setShowReminderCountBadge(stored === 'true');
+  }, []);
+
+  // Update localStorage when toggled
+  const handleToggleBadge = (val: boolean) => {
+    setShowReminderCountBadge(val);
+    localStorage.setItem('showReminderCountBadge', val.toString());
+  };
 
   if (isLoading) {
     return (
@@ -127,6 +141,23 @@ export default function SettingsPage() {
           >
             {isSaving ? 'Saving...' : 'Save Timezone'}
           </button>
+        </div>
+      </section>
+
+      {/* Calendar Badge Setting */}
+      <section className="bg-white dark:bg-zinc-800 rounded-lg p-6 shadow-sm">
+        <h2 className="text-lg font-semibold mb-4">Calendar Display</h2>
+        <div className="flex items-center justify-between">
+          <span className="text-sm">Show reminder count badge on calendar days</span>
+          <Switch
+            checked={showReminderCountBadge}
+            onChange={handleToggleBadge}
+            className={`${showReminderCountBadge ? 'bg-blue-600' : 'bg-gray-300'} relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none`}
+          >
+            <span
+              className={`${showReminderCountBadge ? 'translate-x-6' : 'translate-x-1'} inline-block h-4 w-4 transform rounded-full bg-white transition-transform`}
+            />
+          </Switch>
         </div>
       </section>
     </main>
